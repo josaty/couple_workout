@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Power Couple</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Sans+3:wght@400;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#F9F7F4;--bg2:#EDE9E3;--card:#FFFFFF;--border:#F0EDE8;
+  --text:#1A1714;--text2:#5C544C;--muted:#7C746C;--muted2:#A0998F;
+  --his:#3B82F6;--his-bg:#EFF6FF;--her:#EC4899;--her-bg:#FCE7F3;
+  --green:#22C55E;--green-bg:#F0FDF4;--amber:#D97706;--amber-bg:#FFFBEB;
+  --purple:#7C3AED;--purple-bg:#F5F3FF;
+  --bar-h:64px;--safe-b:env(safe-area-inset-bottom,0px);
+  --shadow:0 2px 20px rgba(0,0,0,0.06);--r:22px;
+}
+body.dark{
+  --bg:#111110;--bg2:#1C1B19;--card:#1E1D1B;--border:#2A2826;
+  --text:#F5F0EB;--text2:#C5BDB5;--muted:#7C746C;--muted2:#5C544C;
+  --his-bg:#1a3a5c;--her-bg:#3d0e27;--green-bg:#052e16;
+  --amber-bg:#3d2000;--purple-bg:#2e1065;--shadow:0 2px 20px rgba(0,0,0,0.35);
+}
+html,body{margin:0;padding:0;background:var(--bg);font-family:'Source Sans 3',sans-serif;color:var(--text);height:100%;overflow:hidden;transition:background 0.3s,color 0.3s}
+#root{height:100vh;display:flex;flex-direction:column}
+.pages{flex:1;overflow:hidden;position:relative}
+.page{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:18px 14px 24px;opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity 0.25s,transform 0.25s}
+.page.active{opacity:1;transform:translateY(0);pointer-events:all}
+
+/* BAR */
+.bar{height:calc(var(--bar-h) + var(--safe-b));padding-bottom:var(--safe-b);background:var(--card);border-top:1px solid var(--border);display:flex;align-items:stretch;z-index:200;transition:background 0.3s,border-color 0.3s}
+.bi{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:transparent;cursor:pointer;padding:6px 4px 0;position:relative}
+.bic{width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;transition:background 0.2s,transform 0.2s}
+.bi.on .bic{transform:translateY(-2px)}
+.bi[data-t=workout].on .bic{background:linear-gradient(135deg,var(--his-bg),var(--her-bg))}
+.bi[data-t=history].on .bic{background:var(--green-bg)}
+.bi[data-t=nutrition].on .bic{background:var(--amber-bg)}
+.bi[data-t=profile].on .bic{background:var(--purple-bg)}
+.bl{font-size:10px;font-weight:600;color:var(--muted);transition:color 0.2s}
+.bi[data-t=workout].on .bl{color:var(--her)}
+.bi[data-t=history].on .bl{color:var(--green)}
+.bi[data-t=nutrition].on .bl{color:var(--amber)}
+.bi[data-t=profile].on .bl{color:var(--purple)}
+.bp{width:4px;height:4px;border-radius:50%;position:absolute;bottom:-4px;opacity:0;transition:opacity 0.2s}
+.bi.on .bp{opacity:1}
+.bi[data-t=workout].on .bp{background:var(--her)}
+.bi[data-t=history].on .bp{background:var(--green)}
+.bi[data-t=nutrition].on .bp{background:var(--amber)}
+.bi[data-t=profile].on .bp{background:var(--purple)}
+
+/* SHARED */
+.card{background:var(--card);border-radius:var(--r);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid var(--border);transition:background 0.3s,border-color 0.3s}
+.st{font-family:'Playfair Display',serif;font-size:22px;font-weight:900;margin:0 0 2px}
+.ss{font-size:12px;color:var(--muted);margin-bottom:16px}
+.rsb{display:flex;justify-content:space-between;align-items:center}
+.pb{height:7px;background:var(--bg2);border-radius:4px;overflow:hidden;margin-top:5px}
+.pbf{height:100%;transition:width 0.5s cubic-bezier(.4,0,.2,1)}
+input,textarea,select{font-family:inherit;color:var(--text);background:var(--bg);border:1.5px solid var(--border);border-radius:10px;outline:none;transition:border-color 0.2s,background 0.3s}
+input:focus,textarea:focus{border-color:var(--muted2)}
+
+/* MODAL */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px);animation:fi 0.2s}
+.sh{background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:500px;padding:20px 18px calc(22px + var(--safe-b));max-height:90vh;overflow-y:auto;animation:su 0.28s cubic-bezier(.4,0,.2,1)}
+@keyframes fi{from{opacity:0}to{opacity:1}}
+@keyframes su{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sh-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+.sh-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;margin-bottom:14px}
+.btn-p{width:100%;padding:15px;border:none;border-radius:14px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:opacity 0.2s;color:white}
+.btn-p:active{opacity:0.8}
+.fl{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px}
+.fi-in{width:100%;padding:12px 14px;font-size:15px;margin-bottom:14px}
+
+/* WORKOUT */
+.tp{display:flex;gap:8px;margin-bottom:14px}
+.tpb{flex:1;padding:12px;border:1.5px solid var(--border);border-radius:14px;font-weight:700;font-size:14px;cursor:pointer;transition:all 0.2s;font-family:inherit;background:var(--card);color:var(--text2)}
+.exi{border-bottom:1px solid var(--border);padding:12px 0}
+.exi:last-child{border-bottom:none}
+.exi.done{background:var(--green-bg);margin:0 -8px;padding:12px 8px;border-radius:12px}
+.rm{display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none}
+.rc{display:flex;align-items:center;gap:8px;padding-left:38px;margin-top:9px}
+.cc{width:26px;height:26px;border-radius:50%;border:2px solid var(--muted2);display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--card);transition:0.2s}
+.cc.on{background:var(--green);border-color:var(--green);color:white}
+.wi{width:64px;padding:9px 6px;font-size:13px;text-align:center}
+.tb{background:var(--bg2);border:none;padding:9px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text2);flex:1;transition:0.2s;font-family:inherit}
+.tb.ton{background:#FEF3C7;color:#D97706}
+body.dark .tb.ton{background:#3d2000;color:#FCD34D}
+
+/* HISTORY */
+.sbox{flex:1;background:var(--card);border-radius:18px;padding:14px 10px;text-align:center;border:1px solid var(--border)}
+.snum{font-family:'Playfair Display',serif;font-size:26px;font-weight:900}
+.slbl{font-size:10px;color:var(--muted);margin-top:2px}
+.dc{aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700}
+.dc.empty{background:var(--bg2);color:var(--muted2)}
+.dc.partial{background:var(--his-bg);color:var(--his)}
+.dc.full{background:linear-gradient(135deg,var(--his),var(--her));color:white}
+.dc.tr{box-shadow:0 0 0 2px var(--her)}
+
+/* NUTRITION */
+.mi{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.mi:last-child{border-bottom:none}
+.amb{width:100%;padding:13px;border:2px dashed var(--border);border-radius:14px;background:transparent;font-family:inherit;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:0.2s}
+.amb:hover{border-color:var(--amber);color:var(--amber)}
+
+/* PROFILE */
+.cc-card{background:linear-gradient(135deg,var(--his-bg),var(--her-bg));border-radius:var(--r);padding:20px;text-align:center;margin-bottom:12px;border:1px solid var(--border)}
+.av{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.sr{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--border);cursor:pointer}
+.sr:last-child{border-bottom:none}
+.si{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.tog{width:44px;height:26px;border-radius:13px;position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0;border:none}
+.tok{width:20px;height:20px;border-radius:50%;background:white;position:absolute;top:3px;transition:left 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.25)}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.55}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef}=React;
+
+const fbCfg={apiKey:"AIzaSyB2DAs_1aIFBWKPoYrk9ewNTLPWBYy5e9A",authDomain:"coupleworkoutjb.firebaseapp.com",databaseURL:"https://coupleworkoutjb-default-rtdb.europe-west1.firebasedatabase.app",projectId:"coupleworkoutjb",storageBucket:"coupleworkoutjb.firebasestorage.app",messagingSenderId:"608590452427",appId:"1:608590452427:web:5e8d4e4a7a75d11bc9ed4e"};
+if(!firebase.apps.length)firebase.initializeApp(fbCfg);
+const db=firebase.database();
+const today=()=>new Date().toISOString().split('T')[0];
+
+const DEF={
+  his:{title:"Его тренировка",color:"#3B82F6",accent:"#1D4ED8",exercises:[
+    {id:'h1',name:"Жим штанги лежа",sets:"3",rest:90},
+    {id:'h2',name:"Тяга верхнего блока",sets:"3",rest:90},
+    {id:'h3',name:"Жим гантелей сидя",sets:"3",rest:60},
+    {id:'h4',name:"Приседания со штангой",sets:"3",rest:120}
+  ]},
+  her:{title:"Её тренировка",color:"#EC4899",accent:"#BE185D",exercises:[
+    {id:'w1',name:"Приседания с гантелями",sets:"3",rest:60},
+    {id:'w2',name:"Румынская тяга",sets:"3",rest:60},
+    {id:'w3',name:"Выпады",sets:"3",rest:45},
+    {id:'w4',name:"Ягодичный мостик",sets:"3",rest:45}
+  ]}
+};
+
+// Icons
+const Ic=({n,s=20,c="currentColor"})=>{
+  const m={
+    workout:<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 5v14M18 5v14M2 9h4M18 9h4M2 15h4M18 15h4"/></svg>,
+    history:<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>,
+    nutrition:<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 2a2 2 0 0 0-2 2v5H4a2 2 0 0 0 0 4h1l1 9h10l1-9h1a2 2 0 0 0 0-4H9V4a2 2 0 0 0-2-2z"/></svg>,
+    profile:<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>,
+    check:<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+    chev:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>,
+    edit:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>,
+    trash:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>,
+    plus:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+    moon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
+    sun:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+  };
+  return m[n]||null;
+};
+
+function Tog({on,onChange,color="#22C55E"}){
+  return <button className="tog" onClick={()=>onChange(!on)} style={{background:on?color:"#C5BDB5"}}>
+    <div className="tok" style={{left:on?'21px':'3px'}}/>
+  </button>;
+}
+
+function Tmr({sec:init,onDone}){
+  const [s,setS]=useState(init);
+  useEffect(()=>{
+    if(s<=0){onDone();return;}
+    const t=setInterval(()=>setS(x=>x-1),1000);
+    return()=>clearInterval(t);
+  },[s]);
+  const m=Math.floor(s/60),ss=s%60;
+  return <span style={{animation:s<=5?'pulse 0.8s infinite':'none'}}>⏱ {m}:{ss<10?'0':''}{ss}</span>;
+}
+
+function Sheet({onClose,title,children}){
+  return <div className="ov" onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
+    <div className="sh">
+      <div className="sh-handle"/>
+      {title&&<div className="sh-title">{title}</div>}
+      {children}
+    </div>
+  </div>;
+}
+
+// ── WORKOUT ──
+function WorkoutPage({sync,update,prog,setProg}){
+  const [who,setWho]=useState("his");
+  const [tmr,setTmr]=useState(null);
+  const [showEd,setShowEd]=useState(false);
+  const [editIdx,setEditIdx]=useState(null);
+  const [form,setForm]=useState({name:'',sets:'3',rest:60});
+  const act=prog[who];
+  const cnt=w=>prog[w].exercises.filter(e=>sync[e.id]?.isDone).length;
+  const hd=cnt("his"),wd=cnt("her");
+  const total=prog.his.exercises.length+prog.her.exercises.length;
+  const pct=((hd+wd)/total)*100;
+  const saveProg=p=>{setProg(p);db.ref('program').set(p);};
+  const openAdd=()=>{setEditIdx(null);setForm({name:'',sets:'3',rest:60});setShowEd(true)};
+  const openEdit=i=>{const ex=act.exercises[i];setEditIdx(i);setForm({name:ex.name,sets:ex.sets,rest:ex.rest});setShowEd(true)};
+  const saveEx=()=>{
+    if(!form.name.trim())return;
+    const p=JSON.parse(JSON.stringify(prog));
+    if(editIdx!=null){p[who].exercises[editIdx]={...p[who].exercises[editIdx],...form,rest:+form.rest||60};}
+    else{p[who].exercises.push({id:who[0]+Date.now()%9999,...form,rest:+form.rest||60});}
+    saveProg(p);setShowEd(false);
+  };
+  const delEx=i=>{const p=JSON.parse(JSON.stringify(prog));p[who].exercises.splice(i,1);saveProg(p);};
+  return(<div>
+    <div style={{marginBottom:14}}>
+      <div style={{fontSize:24,marginBottom:4}}>⚡️</div>
+      <div className="st">Power Couple</div>
+      <div className="ss">{new Date().toLocaleDateString('ru-RU',{day:'numeric',month:'long',weekday:'long'})}</div>
+    </div>
+    <div className="card" style={{marginBottom:12}}>
+      <div className="rsb" style={{fontSize:13,fontWeight:700,marginBottom:5}}>
+        <span>Прогресс дня</span>
+        <span style={{color:pct===100?'var(--green)':'var(--text)'}}>{Math.round(pct)}%</span>
+      </div>
+      <div className="pb"><div className="pbf" style={{width:`${pct}%`,background:'linear-gradient(90deg,var(--his),var(--her))'}}/></div>
+      {pct===100&&<div style={{textAlign:'center',marginTop:8,fontSize:13,color:'var(--green)',fontWeight:700}}>🎉 Отличная работа!</div>}
+    </div>
+    <div className="tp">
+      {["his","her"].map(t=><button key={t} className="tpb" onClick={()=>setWho(t)} style={{background:who===t?(t==="his"?"var(--his)":"var(--her)"):"var(--card)",color:who===t?"white":"var(--text2)",borderColor:who===t?"transparent":"var(--border)"}}>
+        {t==="his"?`ОН (${hd}/${prog.his.exercises.length})`:`ОНА (${wd}/${prog.her.exercises.length})`}
+      </button>)}
+    </div>
+    <div className="card">
+      <div className="rsb" style={{marginBottom:12}}>
+        <div style={{fontSize:15,fontWeight:700,color:act.accent}}>{act.title}</div>
+        <button onClick={openAdd} style={{display:'flex',alignItems:'center',gap:4,padding:'6px 10px',background:'var(--bg2)',border:'none',borderRadius:9,cursor:'pointer',fontSize:12,fontWeight:600,color:'var(--text2)'}}>
+          <Ic n="plus" s={13}/> Добавить
+        </button>
+      </div>
+      {act.exercises.map((ex,i)=>{
+        const st=sync[ex.id]||{};
+        return <div key={ex.id} className={`exi ${st.isDone?'done':''}`}>
+          <div className="rm" onClick={()=>update(ex.id,'isDone',!st.isDone)}>
+            <div className={`cc ${st.isDone?'on':''}`}>{st.isDone&&<Ic n="check"/>}</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,fontSize:14,textDecoration:st.isDone?'line-through':'none',color:st.isDone?'var(--muted)':'var(--text)'}}>{ex.name}</div>
+              <div style={{fontSize:11,color:'var(--muted)'}}>{ex.sets} подх. · {ex.rest}с отдых</div>
+            </div>
+            <div style={{display:'flex',gap:2}} onClick={e=>e.stopPropagation()}>
+              <button onClick={()=>openEdit(i)} style={{background:'none',border:'none',cursor:'pointer',padding:5,opacity:0.45}}><Ic n="edit" c="var(--muted)"/></button>
+              <button onClick={()=>delEx(i)} style={{background:'none',border:'none',cursor:'pointer',padding:5,opacity:0.45}}><Ic n="trash" c="#EF4444"/></button>
+            </div>
+          </div>
+          <div className="rc">
+            <input type="number" placeholder="кг" className="wi" value={st.weight||''} onChange={e=>update(ex.id,'weight',e.target.value)}/>
+            <button className={`tb ${tmr===ex.id?'ton':''}`} onClick={()=>setTmr(tmr===ex.id?null:ex.id)}>
+              {tmr===ex.id?<Tmr sec={ex.rest} onDone={()=>{setTmr(null);window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('warning')}}/>:"Таймер отдыха"}
+            </button>
+          </div>
+        </div>;
+      })}
+    </div>
+    {showEd&&<Sheet onClose={()=>setShowEd(false)} title={editIdx!=null?"Редактировать":"Новое упражнение"}>
+      <div className="fl">Название</div>
+      <input className="fi-in" placeholder="Жим штанги..." value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/>
+      <div style={{display:'flex',gap:10,marginBottom:14}}>
+        <div style={{flex:1}}><div className="fl">Подходы</div><input type="number" style={{width:'100%',padding:'11px 12px',fontSize:15}} value={form.sets} onChange={e=>setForm({...form,sets:e.target.value})}/></div>
+        <div style={{flex:1}}><div className="fl">Отдых (сек)</div><input type="number" style={{width:'100%',padding:'11px 12px',fontSize:15}} value={form.rest} onChange={e=>setForm({...form,rest:e.target.value})}/></div>
+      </div>
+      <button className="btn-p" onClick={saveEx} style={{background:act.color}}>{editIdx!=null?"Сохранить":"Добавить"}</button>
+    </Sheet>}
+  </div>);
+}
+
+// ── HISTORY ──
+function HistoryPage({prog}){
+  const [hist,setHist]=useState({});
+  const [load,setLoad]=useState(true);
+  useEffect(()=>{
+    db.ref('workouts').limitToLast(60).on('value',s=>{setHist(s.val()||{});setLoad(false);});
+    return()=>db.ref('workouts').off();
+  },[]);
+  const now=new Date();
+  const days=Array.from({length:28},(_,i)=>{
+    const d=new Date(now);d.setDate(now.getDate()-27+i);
+    const key=d.toISOString().split('T')[0];
+    const dd=hist[key]||{};
+    const all=[...prog.his.exercises,...prog.her.exercises];
+    const done=all.filter(e=>dd[e.id]?.isDone).length;
+    return{key,type:done===0?'empty':done===all.length?'full':'partial',isT:d.toDateString()===now.toDateString(),done,total:all.length};
+  });
+  let streak=0;
+  for(let i=days.length-1;i>=0;i--){if(days[i].type!=='empty')streak++;else if(i<days.length-1)break;}
+  const nw=days.filter(d=>d.type!=='empty').length;
+  const full=days.filter(d=>d.type==='full').length;
+  const allEx=[...prog.his.exercises,...prog.her.exercises];
+  const calcPct=w=>Math.min(Math.round(Object.values(hist).reduce((a,d)=>a+prog[w].exercises.filter(e=>d[e.id]?.isDone).length,0)/(Math.max(nw,1)*prog[w].exercises.length)*100),100);
+  const hp=calcPct('his'),wp=calcPct('her');
+  const recent=Object.entries(hist).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,6);
+  return(<div>
+    <div className="st">История</div>
+    <div className="ss">Прогресс за 4 недели</div>
+    {load?<div style={{textAlign:'center',padding:40,color:'var(--muted)'}}>Загрузка...</div>:<>
+    <div style={{display:'flex',gap:8,marginBottom:12}}>
+      <div className="sbox"><div className="snum" style={{color:'var(--her)'}}>{streak}</div><div className="slbl">🔥 Streak</div></div>
+      <div className="sbox"><div className="snum" style={{color:'var(--his)'}}>{nw}</div><div className="slbl">🏋️ Тренировок</div></div>
+      <div className="sbox"><div className="snum" style={{color:'var(--green)'}}>{nw?Math.round(full/nw*100):0}%</div><div className="slbl">✅ Полных</div></div>
+    </div>
+    <div className="card">
+      <div style={{fontWeight:700,fontSize:14,marginBottom:10}}>Активность</div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:2,marginBottom:5}}>
+        {['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(l=><div key={l} style={{textAlign:'center',fontSize:9,color:'var(--muted)',fontWeight:600}}>{l}</div>)}
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:4}}>
+        {days.map((d,i)=><div key={i} className={`dc ${d.type} ${d.isT?'tr':''}`}/>)}
+      </div>
+      <div style={{display:'flex',gap:10,marginTop:10,justifyContent:'center',fontSize:11,color:'var(--muted)'}}>
+        <span><span style={{display:'inline-block',width:9,height:9,borderRadius:2,background:'var(--bg2)',marginRight:3,verticalAlign:'middle'}}/>Нет</span>
+        <span><span style={{display:'inline-block',width:9,height:9,borderRadius:2,background:'var(--his-bg)',marginRight:3,verticalAlign:'middle'}}/>Частично</span>
+        <span><span style={{display:'inline-block',width:9,height:9,borderRadius:2,background:'linear-gradient(135deg,var(--his),var(--her))',marginRight:3,verticalAlign:'middle'}}/>100%</span>
+      </div>
+    </div>
+    <div className="card">
+      <div style={{fontWeight:700,fontSize:14,marginBottom:14}}>ОН vs ОНА</div>
+      {[{lbl:'ОН',c:'var(--his)',pct:hp},{lbl:'ОНА',c:'var(--her)',pct:wp}].map(x=>(
+        <div key={x.lbl} style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
+          <div style={{fontSize:12,fontWeight:700,color:x.c,width:28,textAlign:'center'}}>{x.lbl}</div>
+          <div style={{flex:1,height:10,background:'var(--bg2)',borderRadius:5,overflow:'hidden'}}>
+            <div style={{height:'100%',width:`${x.pct}%`,background:x.c,borderRadius:5,transition:'width 0.6s ease'}}/>
+          </div>
+          <div style={{fontSize:12,fontWeight:700,color:'var(--muted)',width:32,textAlign:'right'}}>{x.pct}%</div>
+        </div>
+      ))}
+      <div style={{fontSize:11,color:'var(--muted)',textAlign:'center',marginTop:4}}>
+        {hp>wp?"💪 Он старается больше!":hp<wp?"👑 Она впереди!":"🤝 Вы одинаково крутые!"}
+      </div>
+    </div>
+    <div className="card">
+      <div style={{fontWeight:700,fontSize:14,marginBottom:12}}>Последние сессии</div>
+      {recent.length===0&&<div style={{color:'var(--muted)',fontSize:13,textAlign:'center',padding:12}}>Ещё нет данных</div>}
+      {recent.map(([key,data],i)=>{
+        const done=allEx.filter(e=>data[e.id]?.isDone).length;
+        const p=allEx.length?Math.round(done/allEx.length*100):0;
+        const isT=key===today();
+        const d=new Date(key);
+        const lbl=isT?'Сегодня':d.toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
+        return <div key={key} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 0',borderBottom:i<recent.length-1?'1px solid var(--border)':'none'}}>
+          <div style={{width:8,height:8,borderRadius:'50%',background:p===100?'var(--green)':isT?'#FCD34D':'var(--his)',flexShrink:0}}/>
+          <div style={{flex:1}}>
+            <div style={{fontWeight:600,fontSize:13}}>{lbl}</div>
+            <div style={{fontSize:11,color:'var(--muted)'}}>{done} из {allEx.length} упражнений</div>
+          </div>
+          <div style={{fontSize:12,fontWeight:700,color:p===100?'var(--green)':'var(--muted)'}}>{p}%</div>
+        </div>;
+      })}
+    </div>
+    </>}
+  </div>);
+}
+
+// ── NUTRITION ──
+const EMOJIS=['🥣','🥗','🍗','🥙','🍳','🥤','🍎','🥦','🍚','🥩','🥚','🫙'];
+function NutritionPage(){
+  const [data,setData]=useState({meals:[],water:0,calGoal:2200});
+  const [showForm,setShowForm]=useState(false);
+  const [mf,setMf]=useState({name:'',cal:'',emoji:'🍗',time:''});
+  const ref=db.ref(`nutrition/${today()}`);
+  useEffect(()=>{
+    ref.on('value',s=>{const d=s.val()||{};setData({meals:d.meals||[],water:d.water||0,calGoal:d.calGoal||2200});});
+    return()=>ref.off();
+  },[]);
+  const save=u=>ref.update(u);
+  const addMeal=()=>{
+    if(!mf.name||!mf.cal)return;
+    const meals=[...data.meals,{...mf,cal:+mf.cal,time:mf.time||new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}),id:Date.now()}];
+    save({meals});setShowForm(false);setMf({name:'',cal:'',emoji:'🍗',time:''});
+  };
+  const delMeal=id=>save({meals:data.meals.filter(m=>m.id!==id)});
+  const addWater=v=>save({water:Math.max(0,Math.min(5000,(data.water||0)+v))});
+  const consumed=data.meals.reduce((s,m)=>s+m.cal,0);
+  const wL=(data.water/1000).toFixed(1);
+  const wPct=Math.min(data.water/2500*100,100);
+  const cPct=Math.min(consumed/data.calGoal*100,100);
+  const macros=[
+    {n:'Белки',c:'var(--his)',pct:Math.min(Math.round(consumed*.3/600*100),100),v:Math.round(consumed*.3/4)+'г'},
+    {n:'Углеводы',c:'var(--amber)',pct:Math.min(Math.round(consumed*.5/960*100),100),v:Math.round(consumed*.5/4)+'г'},
+    {n:'Жиры',c:'var(--her)',pct:Math.min(Math.round(consumed*.2/630*100),100),v:Math.round(consumed*.2/9)+'г'},
+  ];
+  return(<div>
+    <div className="st">Питание</div>
+    <div className="ss">Калории и макронутриенты</div>
+    <div className="card">
+      <div className="rsb" style={{marginBottom:5}}>
+        <span style={{fontWeight:700,fontSize:14}}>Калории</span>
+        <span style={{fontSize:13,color:'var(--muted)'}}>{consumed} / {data.calGoal} ккал</span>
+      </div>
+      <div className="pb"><div className="pbf" style={{width:`${cPct}%`,background:'linear-gradient(90deg,#F59E0B,#EC4899)'}}/></div>
+      <div style={{fontSize:11,color:'var(--muted)',marginTop:5}}>Осталось: {Math.max(0,data.calGoal-consumed)} ккал</div>
+    </div>
+    <div className="card">
+      <div className="rsb" style={{marginBottom:8}}>
+        <span style={{fontWeight:700,fontSize:14}}>💧 Вода</span>
+        <span style={{fontWeight:700,color:'var(--his)'}}>{wL} / 2.5 л</span>
+      </div>
+      <div className="pb" style={{marginBottom:12}}><div className="pbf" style={{width:`${wPct}%`,background:'linear-gradient(90deg,#60A5FA,#2563EB)'}}/></div>
+      <div style={{display:'flex',gap:6,justifyContent:'center',flexWrap:'wrap'}}>
+        {[150,250,330,500].map(ml=><button key={ml} onClick={()=>addWater(ml)} style={{padding:'9px 14px',border:'1.5px solid var(--border)',borderRadius:12,background:'var(--bg)',fontFamily:'inherit',fontSize:13,fontWeight:600,cursor:'pointer',color:'var(--his)',transition:'all 0.15s'}}>
+          +{ml}мл
+        </button>)}
+        <button onClick={()=>addWater(-250)} style={{padding:'9px 12px',border:'1.5px solid var(--border)',borderRadius:12,background:'var(--bg)',fontFamily:'inherit',fontSize:13,fontWeight:600,cursor:'pointer',color:'var(--muted)'}}>−250</button>
+      </div>
+      <div style={{display:'flex',justifyContent:'center',gap:4,marginTop:10}}>
+        {Array.from({length:10},(_,i)=><div key={i} style={{width:14,height:20,borderRadius:'50% 50% 40% 40%',background:i<Math.round(data.water/250)?'var(--his)':'var(--bg2)',transition:'background 0.3s'}}/>)}
+      </div>
+    </div>
+    <div className="card">
+      <div style={{fontWeight:700,fontSize:14,marginBottom:12}}>БЖУ</div>
+      {macros.map((m,i)=><div key={i} style={{marginBottom:i<2?10:0}}>
+        <div className="rsb" style={{fontSize:12,marginBottom:4}}>
+          <span style={{fontWeight:600}}><span style={{display:'inline-block',width:7,height:7,borderRadius:'50%',background:m.c,marginRight:5,verticalAlign:'middle'}}/>{m.n}</span>
+          <span style={{color:'var(--muted)'}}>{m.v}</span>
+        </div>
+        <div style={{height:6,background:'var(--bg2)',borderRadius:3,overflow:'hidden'}}><div style={{height:'100%',width:`${m.pct}%`,background:m.c,borderRadius:3,transition:'width 0.5s ease'}}/></div>
+      </div>)}
+    </div>
+    <div className="card">
+      <div style={{fontWeight:700,fontSize:14,marginBottom:4}}>Приёмы пищи</div>
+      {data.meals.length===0&&<div style={{color:'var(--muted)',fontSize:13,textAlign:'center',padding:'12px 0'}}>Добавь первый приём пищи 🍽️</div>}
+      {data.meals.map((m,i)=><div key={m.id||i} className="mi">
+        <div style={{fontSize:22,width:36,textAlign:'center'}}>{m.emoji}</div>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:700,fontSize:14}}>{m.name} <span style={{fontSize:10,color:'var(--muted)',fontWeight:400}}>{m.time}</span></div>
+          <div style={{fontSize:12,color:'var(--muted)'}}>{m.cal} ккал</div>
+        </div>
+        <button onClick={()=>delMeal(m.id)} style={{background:'none',border:'none',cursor:'pointer',padding:6,opacity:0.4}}><Ic n="trash" c="#EF4444"/></button>
+      </div>)}
+      <button className="amb" onClick={()=>setShowForm(true)}>+ Добавить приём пищи</button>
+    </div>
+    {showForm&&<Sheet onClose={()=>setShowForm(false)} title="Новый приём пищи">
+      <div className="fl">Иконка</div>
+      <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:14}}>
+        {EMOJIS.map(e=><button key={e} onClick={()=>setMf({...mf,emoji:e})} style={{width:38,height:38,border:`2px solid ${mf.emoji===e?'var(--amber)':'var(--border)'}`,borderRadius:10,background:mf.emoji===e?'var(--amber-bg)':'var(--bg)',fontSize:18,cursor:'pointer'}}>{e}</button>)}
+      </div>
+      <div className="fl">Название</div>
+      <input className="fi-in" placeholder="Куриная грудка..." value={mf.name} onChange={e=>setMf({...mf,name:e.target.value})}/>
+      <div style={{display:'flex',gap:10,marginBottom:14}}>
+        <div style={{flex:1}}><div className="fl">Калории</div><input type="number" style={{width:'100%',padding:'11px 12px',fontSize:15}} placeholder="350" value={mf.cal} onChange={e=>setMf({...mf,cal:e.target.value})}/></div>
+        <div style={{flex:1}}><div className="fl">Время</div><input type="time" style={{width:'100%',padding:'11px 12px',fontSize:15}} value={mf.time} onChange={e=>setMf({...mf,time:e.target.value})}/></div>
+      </div>
+      <button className="btn-p" onClick={addMeal} style={{background:'var(--amber)'}}>Добавить</button>
+    </Sheet>}
+  </div>);
+}
+
+// ── PROFILE ──
+function ProfilePage({dark,setDark}){
+  const [pf,setPf]=useState({hisName:'',herName:'',hisBirthday:'',herBirthday:''});
+  const [goals,setGoals]=useState({calories:2200,water:2.5,days:4});
+  const [notif,setNotif]=useState({on:false,time:'18:00',msg:'Пора на тренировку! 💪'});
+  const [modal,setModal]=useState(null); // 'profile'|'goals'|'notif'
+  useEffect(()=>{
+    db.ref('profile').on('value',s=>{
+      const d=s.val()||{};
+      if(d.names)setPf(x=>({...x,...d.names}));
+      if(d.goals)setGoals(x=>({...x,...d.goals}));
+      if(d.notif)setNotif(x=>({...x,...d.notif}));
+    });
+    return()=>db.ref('profile').off();
+  },[]);
+  const savePf=()=>{db.ref('profile/names').set(pf);setModal(null)};
+  const saveGoals=()=>{db.ref('profile/goals').set(goals);setModal(null)};
+  const saveNotif=()=>{db.ref('profile/notif').set(notif);setModal(null)};
+  const hn=pf.hisName||'Он', wn=pf.herName||'Она';
+  return(<div>
+    <div className="st">Профиль</div>
+    <div className="ss">Ваша пара и настройки</div>
+    <div className="cc-card">
+      <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:14,marginBottom:12}}>
+        <div className="av" style={{background:'var(--his-bg)'}}>🧔</div>
+        <div style={{fontSize:20}}>❤️</div>
+        <div className="av" style={{background:'var(--her-bg)'}}>👩</div>
+      </div>
+      <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700}}>{hn} & {wn}</div>
+      <div style={{fontSize:12,color:'var(--muted)',marginTop:3}}>Power Couple</div>
+      <button onClick={()=>setModal('profile')} style={{marginTop:12,padding:'8px 16px',border:'1.5px solid var(--border)',borderRadius:10,background:'var(--card)',fontFamily:'inherit',fontSize:12,fontWeight:600,cursor:'pointer',color:'var(--text2)',display:'inline-flex',alignItems:'center',gap:5}}>
+        <Ic n="edit" s={13} c="var(--text2)"/> Редактировать
+      </button>
+    </div>
+    <div className="card">
+      {[
+        {ico:'🎯',bg:'var(--her-bg)',title:'Цели',desc:`${goals.calories} ккал · ${goals.water}л · ${goals.days}д/нед`,fn:()=>setModal('goals')},
+        {ico:'🔔',bg:'var(--amber-bg)',title:'Уведомления',desc:notif.on?`Вкл · ${notif.time}`:'Выключены',fn:()=>setModal('notif')},
+      ].map((s,i)=><div key={i} className="sr" onClick={s.fn}>
+        <div className="si" style={{background:s.bg}}>{s.ico}</div>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:600,fontSize:14}}>{s.title}</div>
+          <div style={{fontSize:12,color:'var(--muted)',marginTop:1}}>{s.desc}</div>
+        </div>
+        <Ic n="chev" c="var(--muted2)"/>
+      </div>)}
+      <div className="sr" style={{cursor:'default'}}>
+        <div className="si" style={{background:'var(--bg2)'}}><Ic n={dark?'sun':'moon'} s={16} c="var(--text2)"/></div>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:600,fontSize:14}}>{dark?'Светлая тема':'Тёмная тема'}</div>
+          <div style={{fontSize:12,color:'var(--muted)',marginTop:1}}>Переключить оформление</div>
+        </div>
+        <Tog on={dark} onChange={v=>{setDark(v);document.body.classList.toggle('dark',v);db.ref('settings/darkMode').set(v);}} color="var(--purple)"/>
+      </div>
+    </div>
+    <div style={{textAlign:'center',fontSize:11,color:'var(--muted2)',marginTop:6,paddingBottom:4}}>Power Couple v2.0 · Made with ❤️</div>
+
+    {modal==='profile'&&<Sheet onClose={()=>setModal(null)} title="Редактировать профиль">
+      <div style={{display:'flex',gap:10,marginBottom:14}}>
+        <div style={{flex:1}}><div className="fl">Его имя 🧔</div><input style={{width:'100%',padding:'11px 12px',fontSize:15}} value={pf.hisName} onChange={e=>setPf({...pf,hisName:e.target.value})}/></div>
+        <div style={{flex:1}}><div className="fl">Её имя 👩</div><input style={{width:'100%',padding:'11px 12px',fontSize:15}} value={pf.herName} onChange={e=>setPf({...pf,herName:e.target.value})}/></div>
+      </div>
+      <div style={{display:'flex',gap:10,marginBottom:14}}>
+        <div style={{flex:1}}><div className="fl">Его д.р.</div><input type="date" style={{width:'100%',padding:'11px 12px',fontSize:14}} value={pf.hisBirthday} onChange={e=>setPf({...pf,hisBirthday:e.target.value})}/></div>
+        <div style={{flex:1}}><div className="fl">Её д.р.</div><input type="date" style={{width:'100%',padding:'11px 12px',fontSize:14}} value={pf.herBirthday} onChange={e=>setPf({...pf,herBirthday:e.target.value})}/></div>
+      </div>
+      <button className="btn-p" onClick={savePf} style={{background:'linear-gradient(135deg,var(--his),var(--her))'}}>Сохранить</button>
+    </Sheet>}
+
+    {modal==='goals'&&<Sheet onClose={()=>setModal(null)} title="Цели">
+      <div className="fl">Калории в день</div>
+      <input type="number" className="fi-in" value={goals.calories} onChange={e=>setGoals({...goals,calories:+e.target.value||2000})}/>
+      <div className="fl">Вода (литры)</div>
+      <input type="number" step="0.5" className="fi-in" value={goals.water} onChange={e=>setGoals({...goals,water:+e.target.value||2})}/>
+      <div className="fl">Тренировок в неделю</div>
+      <div style={{display:'flex',gap:8,marginBottom:14}}>
+        {[2,3,4,5,6].map(n=><button key={n} onClick={()=>setGoals({...goals,days:n})} style={{flex:1,padding:'10px 0',border:`2px solid ${goals.days===n?'var(--his)':'var(--border)'}`,borderRadius:10,background:goals.days===n?'var(--his-bg)':'var(--bg)',fontFamily:'inherit',fontSize:14,fontWeight:700,cursor:'pointer',color:goals.days===n?'var(--his)':'var(--text2)'}}>{n}</button>)}
+      </div>
+      <button className="btn-p" onClick={saveGoals} style={{background:'var(--his)'}}>Сохранить</button>
+    </Sheet>}
+
+    {modal==='notif'&&<Sheet onClose={()=>setModal(null)} title="Уведомления">
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 14px',background:'var(--bg)',borderRadius:14,marginBottom:14}}>
+        <span style={{fontWeight:600,fontSize:14}}>Напоминания о тренировке</span>
+        <Tog on={notif.on} onChange={v=>setNotif({...notif,on:v})} color="var(--his)"/>
+      </div>
+      {notif.on&&<>
+        <div className="fl">Время</div>
+        <input type="time" className="fi-in" value={notif.time} onChange={e=>setNotif({...notif,time:e.target.value})}/>
+        <div className="fl">Текст сообщения</div>
+        <textarea className="fi-in" rows={3} style={{resize:'none',lineHeight:1.6,marginBottom:14}} value={notif.msg} onChange={e=>setNotif({...notif,msg:e.target.value})}/>
+        <div style={{background:'var(--amber-bg)',borderRadius:14,padding:12,marginBottom:14,fontSize:12,color:'var(--amber)',lineHeight:1.6}}>
+          ⚠️ Push-уведомления требуют Telegram Bot + server-side webhook. Сохрани настройки и подключи бота через BotFather.
+        </div>
+      </>}
+      <button className="btn-p" onClick={saveNotif} style={{background:'var(--amber)'}}>Сохранить</button>
+    </Sheet>}
+  </div>);
+}
+
+// ── APP ──
+const TABS=[
+  {id:'workout',lbl:'Тренировка',ico:'workout'},
+  {id:'history',lbl:'История',ico:'history'},
+  {id:'nutrition',lbl:'Питание',ico:'nutrition'},
+  {id:'profile',lbl:'Профиль',ico:'profile'},
+];
+const TCOL={workout:'var(--her)',history:'var(--green)',nutrition:'var(--amber)',profile:'var(--purple)'};
+
+function App(){
+  const [tab,setTab]=useState('workout');
+  const [sync,setSync]=useState({});
+  const [prog,setProg]=useState(DEF);
+  const [dark,setDark]=useState(false);
+  const day=today();
+
+  useEffect(()=>{
+    const wr=db.ref(`workouts/${day}`);
+    wr.on('value',s=>{
+      const d=s.val()||{};
+      setSync(d);
+      const all=[...prog.his.exercises,...prog.her.exercises];
+      if(all.length&&all.every(e=>d[e.id]?.isDone))
+        confetti({particleCount:160,spread:72,origin:{y:0.6}});
+    });
+    db.ref('program').once('value',s=>{const p=s.val();if(p?.his&&p?.her)setProg(p);});
+    db.ref('settings/darkMode').once('value',s=>{if(s.val()){setDark(true);document.body.classList.add('dark');}});
+    window.Telegram?.WebApp?.ready();
+    return()=>wr.off();
+  },[day]);
+
+  const update=(id,field,val)=>{
+    db.ref(`workouts/${day}/${id}/${field}`).set(val);
+    if(field==='isDone'&&val)window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
+  };
+
+  const go=id=>{setTab(id);window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();};
+
+  return(<>
+    <div className="pages">
+      <div className={`page${tab==='workout'?' active':''}`}><WorkoutPage sync={sync} update={update} prog={prog} setProg={setProg}/></div>
+      <div className={`page${tab==='history'?' active':''}`}><HistoryPage prog={prog}/></div>
+      <div className={`page${tab==='nutrition'?' active':''}`}><NutritionPage/></div>
+      <div className={`page${tab==='profile'?' active':''}`}><ProfilePage dark={dark} setDark={setDark}/></div>
+    </div>
+    <div className="bar">
+      {TABS.map(t=><button key={t.id} className={`bi${tab===t.id?' on':''}`} data-t={t.id} onClick={()=>go(t.id)}>
+        <div className="bic"><Ic n={t.ico} s={22} c={tab===t.id?TCOL[t.id]:'var(--muted)'}/></div>
+        <div className="bl">{t.lbl}</div>
+        <div className="bp"/>
+      </button>)}
+    </div>
+  </>);
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
