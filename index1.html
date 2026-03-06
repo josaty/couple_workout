@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Power Couple WebApp</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Sans+3:wght@400;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+
+:root {
+  --bg: var(--tg-theme-bg-color, #F9F7F4);
+  --card: var(--tg-theme-secondary-bg-color, #FFFFFF);
+  --text: var(--tg-theme-text-color, #1A1714);
+  --hint: var(--tg-theme-hint-color, #7C746C);
+  --link: var(--tg-theme-link-color, #3B82F6);
+  --button: var(--tg-theme-button-color, #3B82F6);
+  --button-text: var(--tg-theme-button-text-color, #ffffff);
+  --border: rgba(0,0,0,0.08);
+  --his: #3B82F6; --her: #EC4899; --green: #22C55E;
+}
+
+body {
+  margin: 0; padding: 0; 
+  background: var(--bg); 
+  color: var(--text);
+  font-family: 'Source Sans 3', sans-serif;
+  height: 100vh; overflow: hidden;
+}
+
+#root { height: 100vh; display: flex; flex-direction: column; }
+
+/* Страницы */
+.pages { flex: 1; overflow-y: auto; position: relative; padding: 16px 16px 80px; }
+.page { display: none; animation: fadeIn 0.3s ease; }
+.page.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Карточки */
+.card {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+
+.st { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 900; margin: 0; }
+.ss { color: var(--hint); font-size: 13px; margin-bottom: 16px; }
+
+/* Навигация (Bottom Bar) */
+.bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: calc(64px + env(safe-area-inset-bottom));
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 100;
+}
+.bi {
+  flex: 1; border: none; background: none;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  color: var(--hint); transition: 0.2s;
+}
+.bi.on { color: var(--link); }
+.bi-label { font-size: 10px; font-weight: 600; }
+
+/* Элементы тренировки */
+.ex-row { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.ex-row:last-child { border-bottom: none; }
+.check { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--hint); margin-right: 12px; display: flex; align-items: center; justify-content: center; }
+.check.on { background: var(--green); border-color: var(--green); color: white; }
+.wi { width: 60px; padding: 6px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); text-align: center; margin-left: auto; }
+
+/* Кнопки */
+.btn-main {
+  width: 100%; padding: 14px; border-radius: 12px;
+  background: var(--button); color: var(--button-text);
+  border: none; font-weight: 700; font-size: 15px; cursor: pointer;
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+// Конфиг Firebase (уже настроен под твой проект)
+const firebaseConfig = {
+    apiKey: "AIzaSyB2DAs_1aIFBWKPoYrk9ewNTLPWBYy5e9A",
+    authDomain: "coupleworkoutjb.firebaseapp.com",
+    databaseURL: "https://coupleworkoutjb-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "coupleworkoutjb",
+    storageBucket: "coupleworkoutjb.firebasestorage.app",
+    messagingSenderId: "608590452427",
+    appId: "1:608590452427:web:5e8d4e4a7a75d11bc9ed4e"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const TG = window.Telegram.WebApp;
+
+function App() {
+    const [tab, setTab] = useState('workout');
+    const [user, setUser] = useState({ name: TG.initDataUnsafe?.user?.first_name || "Атлет" });
+    const [sync, setSync] = useState({});
+    const dateKey = new Date().toISOString().split('T')[0];
+
+    useEffect(() => {
+        TG.ready();
+        TG.expand();
+        
+        // Синхронизация данных с Firebase
+        const ref = db.ref(`workouts/${dateKey}`);
+        ref.on('value', (snapshot) => {
+            setSync(snapshot.val() || {});
+        });
+        return () => ref.off();
+    }, []);
+
+    const updateWorkout = (exId, field, value) => {
+        db.ref(`workouts/${dateKey}/${exId}/${field}`).set(value);
+        if (field === 'isDone' && value) TG.HapticFeedback.notificationOccurred('success');
+    };
+
+    const exercises = [
+        { id: 'h1', name: 'Жим лежа', sets: '3x10' },
+        { id: 'h2', name: 'Приседания', sets: '3x12' },
+        { id: 'h3', name: 'Тяга блока', sets: '3x10' }
+    ];
+
+    return (
+        <div id="root">
+            <div className="pages">
+                {/* Страница ТРЕНИРОВКИ */}
+                <div className={`page ${tab === 'workout' ? 'active' : ''}`}>
+                    <div className="st">Привет, {user.name}! 👋</div>
+                    <div className="ss">Твоя тренировка на сегодня</div>
+                    
+                    <div className="card">
+                        <div style={{fontWeight:700, marginBottom:10}}>Силовая А</div>
+                        {exercises.map(ex => (
+                            <div key={ex.id} className="ex-row">
+                                <div 
+                                    className={`check ${sync[ex.id]?.isDone ? 'on' : ''}`}
+                                    onClick={() => updateWorkout(ex.id, 'isDone', !sync[ex.id]?.isDone)}
+                                >
+                                    {sync[ex.id]?.isDone && '✓'}
+                                </div>
+                                <div>
+                                    <div style={{fontSize:14, fontWeight:600}}>{ex.name}</div>
+                                    <div style={{fontSize:11, color:'var(--hint)'}}>{ex.sets}</div>
+                                </div>
+                                <input 
+                                    type="number" 
+                                    className="wi" 
+                                    placeholder="кг"
+                                    value={sync[ex.id]?.weight || ''}
+                                    onChange={(e) => updateWorkout(ex.id, 'weight', e.target.value)}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Страница ПИТАНИЯ */}
+                <div className={`page ${tab === 'nutrition' ? 'active' : ''}`}>
+                    <div className="st">Питание</div>
+                    <div className="ss">Дневник калорий</div>
+                    <div className="card">
+                        <div style={{textAlign:'center', padding:'20px 0'}}>
+                            <div style={{fontSize:32, fontWeight:900}}>0 / 2200</div>
+                            <div style={{fontSize:12, color:'var(--hint)'}}>ккал сегодня</div>
+                        </div>
+                    </div>
+                    <button className="btn-main" onClick={() => TG.showAlert('Скоро добавим выбор продуктов!')}>
+                        + Добавить еду
+                    </button>
+                </div>
+
+                {/* Страница ПРОФИЛЯ */}
+                <div className={`page ${tab === 'profile' ? 'active' : ''}`}>
+                    <div className="st">Настройки</div>
+                    <div className="ss">Аккаунт Telegram: @{TG.initDataUnsafe?.user?.username || 'user'}</div>
+                    <div className="card" onClick={() => TG.close()}>
+                        <div style={{color:'#EF4444', fontWeight:600}}>Закрыть приложение</div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Навигация */}
+            <div className="bar">
+                <button className={`bi ${tab === 'workout' ? 'on' : ''}`} onClick={() => { setTab('workout'); TG.HapticFeedback.selectionChanged(); }}>
+                    <span>🏋️</span>
+                    <span className="bi-label">Зал</span>
+                </button>
+                <button className={`bi ${tab === 'nutrition' ? 'on' : ''}`} onClick={() => { setTab('nutrition'); TG.HapticFeedback.selectionChanged(); }}>
+                    <span>🍎</span>
+                    <span className="bi-label">Еда</span>
+                </button>
+                <button className={`bi ${tab === 'profile' ? 'on' : ''}`} onClick={() => { setTab('profile'); TG.HapticFeedback.selectionChanged(); }}>
+                    <span>⚙️</span>
+                    <span className="bi-label">Настройки</span>
+                </button>
+            </div>
+        </div>
+    );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
