@@ -3,47 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Couple Workout Sync</title>
+    <title>Power Couple Workout</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Source+Sans+3:wght@400;600;700&display=swap');
         
-        body { margin: 0; padding: 0; background: #F9F7F4; font-family: 'Source Sans 3', sans-serif; color: #1A1714; }
-        .container { padding: 20px 16px 100px; max-width: 500px; margin: 0 auto; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .card { background: white; border-radius: 24px; padding: 20px; margin-bottom: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); border: 1px solid #F0EDE8; }
+        body { margin: 0; padding: 0; background: #F9F7F4; font-family: 'Source Sans 3', sans-serif; color: #1A1714; overflow-x: hidden; }
+        .container { padding: 20px 16px 120px; max-width: 500px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 24px; }
         
-        .tab-container { display: flex; gap: 10px; margin-bottom: 20px; position: sticky; top: 10px; z-index: 10; background: rgba(249, 247, 244, 0.8); backdrop-filter: blur(10px); padding: 5px; border-radius: 16px; }
-        .tab-btn { flex: 1; padding: 14px; border: none; border-radius: 12px; font-weight: 700; font-size: 15px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        /* Карточки и элементы */
+        .card { background: white; border-radius: 28px; padding: 20px; margin-bottom: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); border: 1px solid #F0EDE8; }
+        .exercise-item { border-bottom: 1px solid #F0EDE8; padding: 16px 0; transition: all 0.3s ease; }
+        .exercise-item:last-child { border-bottom: none; }
+        .exercise-item.done-bg { background: #F0FDF4; margin: 0 -10px; padding: 16px 10px; border-radius: 12px; }
+
+        /* Взаимодействие */
+        .row-main { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+        .row-controls { display: flex; align-items: center; gap: 10px; padding-left: 38px; margin-top: 10px; }
         
-        .exercise-row { display: flex; align-items: center; gap: 15px; padding: 14px; border-radius: 16px; margin-bottom: 8px; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; }
-        .exercise-row.active { border-color: #F0EDE8; }
-        .exercise-row.done { background: #F0FDF4; opacity: 0.8; }
-        
-        .check-circle { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #D1C7BE; display: flex; align-items: center; justify-content: center; transition: 0.2s; flex-shrink: 0; background: white; }
+        .check-circle { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #D1C7BE; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: white; transition: 0.2s; }
         .check-circle.done { background: #22C55E; border-color: #22C55E; color: white; }
         
-        .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .online-status { font-size: 11px; color: #22C55E; display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 8px; }
-        .dot { width: 6px; height: 6px; background: #22C55E; border-radius: 50%; animation: pulse 2s infinite; }
+        /* Кнопки и инпуты */
+        .tab-container { display: flex; gap: 10px; margin-bottom: 20px; position: sticky; top: 10px; z-index: 100; background: rgba(249, 247, 244, 0.8); backdrop-filter: blur(10px); padding: 4px; border-radius: 16px; }
+        .tab-btn { flex: 1; padding: 14px; border: none; border-radius: 12px; font-weight: 700; font-size: 15px; transition: all 0.3s; }
         
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        .weight-input { width: 65px; padding: 10px; border: 1.5px solid #F0EDE8; border-radius: 12px; font-family: inherit; font-size: 14px; text-align: center; outline: none; transition: border-color 0.2s; }
+        .weight-input:focus { border-color: #D1C7BE; }
+        
+        .timer-btn { background: #F3F4F6; border: none; padding: 10px 14px; border-radius: 12px; font-size: 13px; font-weight: 600; cursor: pointer; color: #4B5563; flex: 1; transition: 0.2s; }
+        .timer-active { background: #FEF3C7; color: #D97706; font-weight: 700; box-shadow: 0 0 10px rgba(217,119,6,0.2); }
+
+        /* Прогресс-бар */
+        .progress-section { margin-bottom: 20px; }
+        .pb-container { height: 8px; background: #EDE9E3; border-radius: 4px; overflow: hidden; margin-top: 6px; }
+        .pb-fill { height: 100%; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useCallback } = React;
 
+        // Конфигурация Firebase (Твои ключи)
         const firebaseConfig = {
             apiKey: "AIzaSyB2DAs_1aIFBWKPoYrk9ewNTLPWBYy5e9A",
             authDomain: "coupleworkoutjb.firebaseapp.com",
@@ -54,119 +67,158 @@
             appId: "1:608590452427:web:5e8d4e4a7a75d11bc9ed4e"
         };
 
-        firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         const workoutData = {
-            main: {
-                his: {
-                    title: "Его программа",
-                    goal: "Масса и сила",
-                    color: "#3B82F6",
-                    bg: "#EFF6FF",
-                    accent: "#1D4ED8",
-                    exercises: [
-                        { name: "Жим штанги лёжа", sets: "3", reps: "8-10", rest: "90с" },
-                        { name: "Тяга верхнего блока", sets: "3", reps: "10-12", rest: "90с" },
-                        { name: "Жим гантелей сидя", sets: "3", reps: "10-12", rest: "60с" },
-                        { name: "Тяга штанги в наклоне", sets: "3", reps: "10-12", rest: "90с" },
-                        { name: "Приседания со штангой", sets: "3", reps: "10-12", rest: "90с" }
-                    ]
-                },
-                her: {
-                    title: "Её программа",
-                    goal: "Тонус и рельеф",
-                    color: "#EC4899",
-                    bg: "#FDF2F8",
-                    accent: "#BE185D",
-                    exercises: [
-                        { name: "Приседания с гантелями", sets: "3", reps: "15-20", rest: "45с" },
-                        { name: "Румынская тяга", sets: "3", reps: "15", rest: "45с" },
-                        { name: "Жим гантелей лёжа", sets: "3", reps: "15", rest: "45с" },
-                        { name: "Выпады с гантелями", sets: "3", reps: "12 на ногу", rest: "45с" },
-                        { name: "Ягодичный мостик", sets: "3", reps: "20", rest: "45с" }
-                    ]
-                }
+            his: {
+                title: "Его тренировка",
+                color: "#3B82F6",
+                accent: "#1D4ED8",
+                exercises: [
+                    {id: 'h1', name: "Жим штанги лежа", sets: "3", rest: 90},
+                    {id: 'h2', name: "Тяга верхнего блока", sets: "3", rest: 90},
+                    {id: 'h3', name: "Жим гантелей сидя", sets: "3", rest: 60},
+                    {id: 'h4', name: "Приседания со штангой", sets: "3", rest: 120}
+                ]
+            },
+            her: {
+                title: "Ее тренировка",
+                color: "#EC4899",
+                accent: "#BE185D",
+                exercises: [
+                    {id: 'w1', name: "Приседания с гантелями", sets: "3", rest: 60},
+                    {id: 'w2', name: "Румынская тяга", sets: "3", rest: 60},
+                    {id: 'w3', name: "Выпады", sets: "3", rest: 45},
+                    {id: 'w4', name: "Ягодичный мостик", sets: "3", rest: 45}
+                ]
             }
         };
 
+        function Timer({ initialSeconds, onFinish }) {
+            const [seconds, setSeconds] = useState(initialSeconds);
+            useEffect(() => {
+                if (seconds <= 0) { onFinish(); return; }
+                const interval = setInterval(() => setSeconds(s => s - 1), 1000);
+                return () => clearInterval(interval);
+            }, [seconds]);
+
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return <span>⏱ {mins}:{secs < 10 ? '0' : ''}{secs}</span>;
+        }
+
         function App() {
             const [activeTab, setActiveTab] = useState("his");
-            const [completed, setCompleted] = useState({});
+            const [syncData, setSyncData] = useState({});
+            const [activeTimer, setActiveTimer] = useState(null);
             
-            // Генерируем ID сессии на основе текущей даты (например, "2024-05-20")
             const dateId = new Date().toISOString().split('T')[0];
+            const sessionRef = `workouts/${dateId}`;
 
             useEffect(() => {
-                const ref = db.ref(`workouts/${dateId}`);
-                ref.on('value', (snapshot) => {
-                    setCompleted(snapshot.val() || {});
+                const ref = db.ref(sessionRef);
+                ref.on('value', (snap) => {
+                    const data = snap.val() || {};
+                    setSyncData(data);
+                    
+                    // Проверка на финиш всей тренировки
+                    const allEx = [...workoutData.his.exercises, ...workoutData.her.exercises];
+                    const finishedCount = allEx.filter(ex => data[ex.id]?.isDone).length;
+                    if (finishedCount === allEx.length && allEx.length > 0) {
+                        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                    }
                 });
-                
-                if (window.Telegram?.WebApp) {
-                    window.Telegram.WebApp.ready();
-                    window.Telegram.WebApp.expand();
-                }
+                if (window.Telegram?.WebApp) window.Telegram.WebApp.ready();
                 return () => ref.off();
             }, [dateId]);
 
-            const toggle = (id) => {
-                const newState = !completed[id];
-                db.ref(`workouts/${dateId}/${id}`).set(newState);
-                
-                if (window.Telegram?.WebApp) {
-                    window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+            const updateField = (id, field, value) => {
+                db.ref(`${sessionRef}/${id}/${field}`).set(value);
+                if (field === 'isDone' && value === true) {
+                    if (window.Telegram?.WebApp) window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
                 }
             };
 
-            const active = workoutData.main[activeTab];
+            const active = workoutData[activeTab];
+            const hisDone = workoutData.his.exercises.filter(ex => syncData[ex.id]?.isDone).length;
+            const herDone = workoutData.her.exercises.filter(ex => syncData[ex.id]?.isDone).length;
+            const totalProgress = ((hisDone + herDone) / (workoutData.his.exercises.length + workoutData.her.exercises.length)) * 100;
 
             return (
                 <div className="container">
                     <div className="header">
-                        <div style={{fontSize: '40px'}}>💑</div>
-                        <h1 style={{fontFamily: "'Playfair Display', serif", margin: '10px 0 0', fontSize: '28px'}}>Наш Воркаут</h1>
-                        <div className="online-status">
-                            <span className="dot"></span> Синхронизация активна
+                        <div style={{fontSize: '32px'}}>⚡️</div>
+                        <h1 style={{fontFamily: "'Playfair Display', serif", fontSize: '24px', margin: '5px 0'}}>Power Couple</h1>
+                        <div style={{fontSize: '12px', color: '#7C746C'}}>Синхронизация: {dateId}</div>
+                    </div>
+
+                    <div className="progress-section">
+                        <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700}}>
+                            <span>Общий прогресс</span>
+                            <span>{Math.round(totalProgress)}%</span>
+                        </div>
+                        <div className="pb-container">
+                            <div className="pb-fill" style={{ width: `${totalProgress}%`, background: 'linear-gradient(90deg, #3B82F6, #EC4899)' }} />
                         </div>
                     </div>
 
                     <div className="tab-container">
                         <button className="tab-btn" onClick={() => setActiveTab("his")} 
-                            style={{ background: activeTab === "his" ? "#3B82F6" : "white", color: activeTab === "his" ? "white" : "#5C544C", boxShadow: activeTab === "his" ? "0 4px 12px rgba(59,130,246,0.3)" : "none" }}>
-                            🏋️ ОН
+                            style={{ background: activeTab === "his" ? "#3B82F6" : "white", color: activeTab === "his" ? "white" : "#5C544C" }}>
+                            ОН ({hisDone}/{workoutData.his.exercises.length})
                         </button>
                         <button className="tab-btn" onClick={() => setActiveTab("her")} 
-                            style={{ background: activeTab === "her" ? "#EC4899" : "white", color: activeTab === "her" ? "white" : "#5C544C", boxShadow: activeTab === "her" ? "0 4px 12px rgba(236,72,153,0.3)" : "none" }}>
-                            🌸 ОНА
+                            style={{ background: activeTab === "her" ? "#EC4899" : "white", color: activeTab === "her" ? "white" : "#5C544C" }}>
+                            ОНА ({herDone}/{workoutData.her.exercises.length})
                         </button>
                     </div>
 
                     <div className="card">
-                        <div style={{marginBottom: '20px'}}>
-                            <div style={{fontSize: '20px', fontWeight: 700}}>{active.title}</div>
-                            <div className="badge" style={{background: active.bg, color: active.accent}}>{active.goal}</div>
-                        </div>
-
-                        {active.exercises.map((ex, i) => {
-                            const id = `${activeTab}_${i}`;
-                            const isDone = !!completed[id];
+                        <div style={{marginBottom: '10px', fontSize: '18px', fontWeight: 700, color: active.accent}}>{active.title}</div>
+                        {active.exercises.map((ex) => {
+                            const state = syncData[ex.id] || {};
                             return (
-                                <div key={id} className={`exercise-row ${isDone ? 'done' : 'active'}`} onClick={() => toggle(id)}>
-                                    <div className={`check-circle ${isDone ? 'done' : ''}`}>
-                                        {isDone && "✓"}
+                                <div key={ex.id} className={`exercise-item ${state.isDone ? 'done-bg' : ''}`}>
+                                    <div className="row-main" onClick={() => updateField(ex.id, 'isDone', !state.isDone)}>
+                                        <div className={`check-circle ${state.isDone ? 'done' : ''}`}>{state.isDone && "✓"}</div>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontWeight: 700, textDecoration: state.isDone ? 'line-through' : 'none', color: state.isDone ? '#6B7280' : '#1A1714' }}>
+                                                {ex.name}
+                                            </div>
+                                            <div style={{ fontSize: '12px', color: '#7C746C' }}>{ex.sets} подх. • Отдых {ex.rest}с</div>
+                                        </div>
                                     </div>
-                                    <div style={{flex: 1}}>
-                                        <div style={{fontWeight: 700, fontSize: '16px', textDecoration: isDone ? 'line-through' : 'none'}}>{ex.name}</div>
-                                        <div style={{fontSize: '13px', color: '#7C746C'}}>{ex.sets} × {ex.reps} • отдых {ex.rest}</div>
+                                    
+                                    <div className="row-controls">
+                                        <input 
+                                            type="number" 
+                                            placeholder="Вес" 
+                                            className="weight-input"
+                                            value={state.weight || ''}
+                                            onChange={(e) => updateField(ex.id, 'weight', e.target.value)}
+                                        />
+                                        <button 
+                                            className={`timer-btn ${activeTimer === ex.id ? 'timer-active' : ''}`}
+                                            onClick={() => setActiveTimer(activeTimer === ex.id ? null : ex.id)}
+                                        >
+                                            {activeTimer === ex.id ? (
+                                                <Timer initialSeconds={ex.rest} onFinish={() => {
+                                                    setActiveTimer(null);
+                                                    if (window.Telegram?.WebApp) window.Telegram.WebApp.HapticFeedback.notificationOccurred('warning');
+                                                }} />
+                                            ) : (
+                                                `Таймер отдыха`
+                                            )}
+                                        </button>
                                     </div>
                                 </div>
                             );
                         })}
                     </div>
                     
-                    <div style={{textAlign: 'center', color: '#A0998F', fontSize: '12px', marginTop: '20px'}}>
-                        Данные обновляются в реальном времени для обоих устройств
+                    <div style={{textAlign: 'center', color: '#A0998F', fontSize: '12px', marginTop: '20px', lineHeight: '1.5'}}>
+                        Выполняйте упражнения вместе.<br/>Данные сохраняются автоматически.
                     </div>
                 </div>
             );
