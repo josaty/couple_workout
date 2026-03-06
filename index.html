@@ -121,10 +121,11 @@ body.dark .tb.ton{background:#3d2000;color:#FCD34D}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.55}}
 </style>
 </head>
-<body>
+<body class="">
 <div id="root"></div>
 <script type="text/babel">
 const {useState,useEffect,useRef}=React;
+const tg = window.Telegram.WebApp;
 
 const fbCfg={apiKey:"AIzaSyB2DAs_1aIFBWKPoYrk9ewNTLPWBYy5e9A",authDomain:"coupleworkoutjb.firebaseapp.com",databaseURL:"https://coupleworkoutjb-default-rtdb.europe-west1.firebasedatabase.app",projectId:"coupleworkoutjb",storageBucket:"coupleworkoutjb.firebasestorage.app",messagingSenderId:"608590452427",appId:"1:608590452427:web:5e8d4e4a7a75d11bc9ed4e"};
 if(!firebase.apps.length)firebase.initializeApp(fbCfg);
@@ -192,12 +193,10 @@ function Sheet({onClose,title,children}){
 }
 
 // ── WORKOUT ──
-function WorkoutPage({sync,update,prog,setProg}){
+function WorkoutPage({sync,update,prog,setProg,setShowEd,showEd,editIdx,setEditIdx,form,setForm}){
   const [who,setWho]=useState("his");
   const [tmr,setTmr]=useState(null);
-  const [showEd,setShowEd]=useState(false);
-  const [editIdx,setEditIdx]=useState(null);
-  const [form,setForm]=useState({name:'',sets:'3',rest:60});
+  
   const act=prog[who];
   const cnt=w=>prog[w].exercises.filter(e=>sync[e.id]?.isDone).length;
   const hd=cnt("his"),wd=cnt("her");
@@ -257,7 +256,7 @@ function WorkoutPage({sync,update,prog,setProg}){
           <div className="rc">
             <input type="number" placeholder="кг" className="wi" value={st.weight||''} onChange={e=>update(ex.id,'weight',e.target.value)}/>
             <button className={`tb ${tmr===ex.id?'ton':''}`} onClick={()=>setTmr(tmr===ex.id?null:ex.id)}>
-              {tmr===ex.id?<Tmr sec={ex.rest} onDone={()=>{setTmr(null);window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('warning')}}/>:"Таймер отдыха"}
+              {tmr===ex.id?<Tmr sec={ex.rest} onDone={()=>{setTmr(null);tg.HapticFeedback?.notificationOccurred('warning')}}/>:"Таймер отдыха"}
             </button>
           </div>
         </div>;
@@ -363,9 +362,8 @@ function HistoryPage({prog}){
 
 // ── NUTRITION ──
 const EMOJIS=['🥣','🥗','🍗','🥙','🍳','🥤','🍎','🥦','🍚','🥩','🥚','🫙'];
-function NutritionPage(){
+function NutritionPage({showForm, setShowForm}){
   const [data,setData]=useState({meals:[],water:0,calGoal:2200});
-  const [showForm,setShowForm]=useState(false);
   const [mf,setMf]=useState({name:'',cal:'',emoji:'🍗',time:''});
   const ref=db.ref(`nutrition/${today()}`);
   useEffect(()=>{
@@ -456,11 +454,11 @@ function NutritionPage(){
 }
 
 // ── PROFILE ──
-function ProfilePage({dark,setDark}){
+function ProfilePage({dark,setDark,modal,setModal}){
   const [pf,setPf]=useState({hisName:'',herName:'',hisBirthday:'',herBirthday:''});
   const [goals,setGoals]=useState({calories:2200,water:2.5,days:4});
   const [notif,setNotif]=useState({on:false,time:'18:00',msg:'Пора на тренировку! 💪'});
-  const [modal,setModal]=useState(null); // 'profile'|'goals'|'notif'
+  
   useEffect(()=>{
     db.ref('profile').on('value',s=>{
       const d=s.val()||{};
@@ -568,10 +566,36 @@ function App(){
   const [tab,setTab]=useState('workout');
   const [sync,setSync]=useState({});
   const [prog,setProg]=useState(DEF);
-  const [dark,setDark]=useState(false);
+  const [dark,setDark]=useState(tg.colorScheme === 'dark');
+  
+  // States for Modals to handle BackButton
+  const [showEd,setShowEd]=useState(false);
+  const [showNutForm,setShowNutForm]=useState(false);
+  const [profModal,setProfModal]=useState(null);
+  
+  const [editIdx,setEditIdx]=useState(null);
+  const [form,setForm]=useState({name:'',sets:'3',rest:60});
+
   const day=today();
 
   useEffect(()=>{
+    // 1. Initializing Mini App
+    tg.ready();
+    tg.expand();
+    tg.enableClosingConfirmation();
+    
+    // 2. Set colors to blend with header
+    const updateColors = () => {
+      const isDark = tg.colorScheme === 'dark';
+      setDark(isDark);
+      document.body.classList.toggle('dark', isDark);
+      tg.setHeaderColor(isDark ? '#111110' : '#F9F7F4');
+      tg.setBackgroundColor(isDark ? '#111110' : '#F9F7F4');
+    };
+    
+    updateColors();
+    tg.onEvent('themeChanged', updateColors);
+
     const wr=db.ref(`workouts/${day}`);
     wr.on('value',s=>{
       const d=s.val()||{};
@@ -581,24 +605,58 @@ function App(){
         confetti({particleCount:160,spread:72,origin:{y:0.6}});
     });
     db.ref('program').once('value',s=>{const p=s.val();if(p?.his&&p?.her)setProg(p);});
-    db.ref('settings/darkMode').once('value',s=>{if(s.val()){setDark(true);document.body.classList.add('dark');}});
-    window.Telegram?.WebApp?.ready();
-    return()=>wr.off();
-  },[day]);
+    
+    return () => {
+        wr.off();
+        tg.offEvent('themeChanged', updateColors);
+    };
+  }, [day]);
+
+  // 3. Back Button Management
+  useEffect(() => {
+    const isModalOpen = showEd || showNutForm || profModal !== null;
+    const isSubPage = tab !== 'workout';
+
+    if (isModalOpen || isSubPage) {
+        tg.BackButton.show();
+    } else {
+        tg.BackButton.hide();
+    }
+
+    const onBack = () => {
+        if (showEd) setShowEd(false);
+        else if (showNutForm) setShowNutForm(false);
+        else if (profModal) setProfModal(null);
+        else if (tab !== 'workout') setTab('workout');
+    };
+
+    tg.onEvent('backButtonClicked', onBack);
+    return () => tg.offEvent('backButtonClicked', onBack);
+  }, [showEd, showNutForm, profModal, tab]);
 
   const update=(id,field,val)=>{
     db.ref(`workouts/${day}/${id}/${field}`).set(val);
-    if(field==='isDone'&&val)window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
+    if(field==='isDone'&&val)tg.HapticFeedback?.notificationOccurred('success');
   };
 
-  const go=id=>{setTab(id);window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();};
+  const go=id=>{setTab(id);tg.HapticFeedback?.selectionChanged();};
 
   return(<>
     <div className="pages">
-      <div className={`page${tab==='workout'?' active':''}`}><WorkoutPage sync={sync} update={update} prog={prog} setProg={setProg}/></div>
+      <div className={`page${tab==='workout'?' active':''}`}>
+        <WorkoutPage 
+            sync={sync} update={update} prog={prog} setProg={setProg} 
+            setShowEd={setShowEd} showEd={showEd} editIdx={editIdx} 
+            setEditIdx={setEditIdx} form={form} setForm={setForm}
+        />
+      </div>
       <div className={`page${tab==='history'?' active':''}`}><HistoryPage prog={prog}/></div>
-      <div className={`page${tab==='nutrition'?' active':''}`}><NutritionPage/></div>
-      <div className={`page${tab==='profile'?' active':''}`}><ProfilePage dark={dark} setDark={setDark}/></div>
+      <div className={`page${tab==='nutrition'?' active':''}`}>
+        <NutritionPage showForm={showNutForm} setShowForm={setShowNutForm}/>
+      </div>
+      <div className={`page${tab==='profile'?' active':''}`}>
+        <ProfilePage dark={dark} setDark={setDark} modal={profModal} setModal={setProfModal}/>
+      </div>
     </div>
     <div className="bar">
       {TABS.map(t=><button key={t.id} className={`bi${tab===t.id?' on':''}`} data-t={t.id} onClick={()=>go(t.id)}>
@@ -614,4 +672,3 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
-
