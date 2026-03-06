@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Workout for Couples</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Sans+3:wght@400;600&display=swap');
+        
+        body { margin: 0; padding: 0; background: #F9F7F4; -webkit-tap-highlight-color: transparent; }
+        .card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        .exercise-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 8px; border-bottom: 1px solid #F0EDE8; cursor: pointer; border-radius: 8px; transition: background 0.2s; }
+        .check-circle { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #D1C7BE; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+        .check-circle.done { background: #22C55E; border-color: #22C55E; color: white; }
+        .tab-btn { flex: 1; padding: 12px; border: none; border-radius: 12px; font-family: 'Source Sans 3', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .progress-bar { height: 6px; background: #EDE9E3; border-radius: 3px; overflow: hidden; margin-top: 8px; width: 80px; }
+        .progress-fill { height: 100%; transition: width 0.4s ease; }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; font-family: 'Source Sans 3', sans-serif; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const workoutData = {
+            warmup: {
+                title: "Разминка",
+                duration: "10 мин",
+                emoji: "🔥",
+                exercises: [
+                    { name: "Ходьба на беговой дорожке", reps: "5 мин" },
+                    { name: "Динамическая растяжка", reps: "5 мин" },
+                ],
+            },
+            main: {
+                his: {
+                    title: "Его программа",
+                    goal: "Набор массы",
+                    color: "#3B82F6",
+                    bg: "#EFF6FF",
+                    accent: "#1D4ED8",
+                    exercises: [
+                        { name: "Жим штанги лёжа", sets: "3", reps: "8–10", note: "Широкий хват, медленно вниз", rest: "90 сек" },
+                        { name: "Тяга верхнего блока к груди", sets: "3", reps: "10–12", note: "Лопатки вниз и вместе", rest: "90 сек" },
+                        { name: "Жим гантелей сидя", sets: "3", reps: "10–12", note: "Не блокировать локти", rest: "60 сек" },
+                        { name: "Тяга штанги в наклоне", sets: "3", reps: "10–12", note: "Спина прямая, тянуть к поясу", rest: "90 сек" },
+                        { name: "Сгибание рук с гантелями", sets: "3", reps: "12–15", note: "Не раскачиваться", rest: "60 сек" },
+                        { name: "Приседания со штангой", sets: "3", reps: "10–12", note: "Колени не заваливать внутрь", rest: "90 сек" },
+                    ],
+                },
+                her: {
+                    title: "Её программа",
+                    goal: "Похудение и тонус",
+                    color: "#EC4899",
+                    bg: "#FDF2F8",
+                    accent: "#BE185D",
+                    exercises: [
+                        { name: "Приседания с гантелями", sets: "3", reps: "15–20", note: "Глубокий присед, пятки на полу", rest: "45 сек" },
+                        { name: "Румынская тяга с гантелями", sets: "3", reps: "15", note: "Тянуть ягодицами, спина прямая", rest: "45 сек" },
+                        { name: "Жим гантелей лёжа", sets: "3", reps: "15", note: "Лёгкий вес, контроль движения", rest: "45 сек" },
+                        { name: "Тяга горизонтального блока", sets: "3", reps: "15", note: "Локти близко к телу", rest: "45 сек" },
+                        { name: "Выпады с гантелями", sets: "3", reps: "12 на ногу", note: "Колено не выходит за носок", rest: "45 сек" },
+                        { name: "Ягодичный мостик с отягощением", sets: "3", reps: "20", note: "Пауза наверху 2 секунды", rest: "45 сек" },
+                    ],
+                },
+            },
+            together: {
+                title: "Финал вместе",
+                duration: "15 мин",
+                emoji: "💪",
+                exercises: [
+                    { name: "Планка", sets: "3", reps: "30–45 сек", note: "Соревнование — кто дольше 😄" },
+                    { name: "Скручивания / велосипед", sets: "3", reps: "20", note: "Одновременно на ковриках рядом" },
+                    { name: "Растяжка в паре", sets: "—", reps: "5–7 мин", note: "Помогайте друг другу" },
+                ],
+            },
+            tips: [
+                { emoji: "🤝", text: "Страхуйте друг друга" },
+                { emoji: "⏱️", text: "Используйте паузы партнёра" },
+                { emoji: "💧", text: "Пейте воду" },
+            ]
+        };
+
+        function CoupleWorkout() {
+            const [activeTab, setActiveTab] = useState("his");
+            const [completedExercises, setCompletedExercises] = useState({});
+
+            useEffect(() => {
+                if (window.Telegram?.WebApp) {
+                    window.Telegram.WebApp.ready();
+                    window.Telegram.WebApp.expand();
+                }
+            }, []);
+
+            const toggleExercise = (key) => {
+                setCompletedExercises(prev => ({ ...prev, [key]: !prev[key] }));
+            };
+
+            const countCompleted = (prefix) =>
+                Object.entries(completedExercises).filter(([k, v]) => k.startsWith(prefix) && v).length;
+
+            const active = workoutData.main[activeTab];
+            const doneCount = countCompleted(`${activeTab}-`);
+
+            return (
+                <div style={{ fontFamily: "'Source Sans 3', sans-serif", padding: "20px 16px" }}>
+                    <div style={{ textAlign: "center", marginBottom: "24px" }}>
+                        <div style={{ fontSize: "32px" }}>💑</div>
+                        <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "26px", margin: "8px 0 4px" }}>Наш Воркаут</h1>
+                    </div>
+
+                    {/* Warmup */}
+                    <div className="card">
+                        <div style={{ fontWeight: 700, marginBottom: "10px" }}>{workoutData.warmup.emoji} {workoutData.warmup.title}</div>
+                        {workoutData.warmup.exercises.map((ex, i) => (
+                            <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", padding: "4px 0" }}>
+                                <span>{ex.name}</span>
+                                <span style={{ color: "#7C746C" }}>{ex.reps}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Tabs */}
+                    <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+                        <button className="tab-btn" onClick={() => setActiveTab("his")} style={{ background: activeTab === "his" ? "#3B82F6" : "white", color: activeTab === "his" ? "white" : "#5C544C" }}>🏋️ Его</button>
+                        <button className="tab-btn" onClick={() => setActiveTab("her")} style={{ background: activeTab === "her" ? "#EC4899" : "white", color: activeTab === "her" ? "white" : "#5C544C" }}>🌸 Её</button>
+                    </div>
+
+                    {/* Main */}
+                    <div className="card" style={{ borderTop: `4px solid ${active.color}` }}>
+                        <div style={{ marginBottom: "16px" }}>
+                            <div style={{ fontSize: "18px", fontWeight: 700 }}>{active.title}</div>
+                            <div className="badge" style={{ background: active.bg, color: active.accent }}>{active.goal}</div>
+                        </div>
+
+                        {active.exercises.map((ex, i) => {
+                            const key = `${activeTab}-${i}`;
+                            const done = !!completedExercises[key];
+                            return (
+                                <div key={key} className="exercise-row" onClick={() => toggleExercise(key)}>
+                                    <div className={`check-circle ${done ? "done" : ""}`}>{done && "✓"}</div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontWeight: 600, textDecoration: done ? "line-through" : "none", color: done ? "#A0998F" : "#1A1714" }}>{ex.name}</div>
+                                        <div style={{ fontSize: "12px", color: "#7C746C" }}>{ex.note}</div>
+                                    </div>
+                                    <div style={{ textAlign: "right", fontSize: "13px" }}>
+                                        <div style={{ color: active.accent, fontWeight: 700 }}>{ex.sets}×{ex.reps}</div>
+                                        <div style={{ fontSize: "11px", color: "#A0998F" }}>{ex.rest}</div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Together */}
+                    <div className="card" style={{ background: "#F0FDF4" }}>
+                        <div style={{ fontWeight: 700, marginBottom: "10px" }}>{workoutData.together.emoji} {workoutData.together.title}</div>
+                        {workoutData.together.exercises.map((ex, i) => (
+                            <div key={i} style={{ marginBottom: "8px", fontSize: "14px" }}>
+                                <div style={{ fontWeight: 600 }}>{ex.name} — <span style={{ color: "#059669" }}>{ex.reps}</span></div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<CoupleWorkout />);
+    </script>
+</body>
+</html>
