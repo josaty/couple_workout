@@ -1,1296 +1,674 @@
 <!DOCTYPE html>
-<html lang="ru" spellcheck="false">
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#F9F7F4">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Power Couple v3.0 — Тренируйтесь вместе</title>
-
-<!-- Libraries -->
-<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Power Couple</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
 <style>
-/* ═══════════════════════════════════════════════════════════════ */
-/* 🎨 APPLE GLASSMORPHISM DESIGN (v3.0) */
-/* ═══════════════════════════════════════════════════════════════ */
-
-*,*::before,*::after {
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-:root {
-  /* Light Theme */
-  --bg: #F9F7F4;
-  --bg2: #F0EDEA;
-  --card: #FFFFFF;
-  --border: rgba(255, 255, 255, 0.2);
-  --text: #1A1714;
-  --text2: #5C544C;
-  --muted: #8B8680;
-  --muted2: #A59D95;
-  
-  /* Brand Colors */
-  --his: #3B82F6;
-  --his-bg: rgba(59, 130, 246, 0.1);
-  --her: #EC4899;
-  --her-bg: rgba(236, 72, 153, 0.1);
-  --green: #22C55E;
-  --green-bg: rgba(34, 197, 94, 0.1);
-  --amber: #D97706;
-  --amber-bg: rgba(217, 119, 6, 0.1);
-  --purple: #8B5CF6;
-  --purple-bg: rgba(139, 92, 246, 0.1);
-  
-  /* Effects */
-  --shadow-xs: 0 1px 2px rgba(0,0,0,0.05);
-  --shadow-sm: 0 2px 4px rgba(0,0,0,0.08);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
-  --shadow-lg: 0 12px 32px rgba(0,0,0,0.12);
-  --glass-bg: rgba(255, 255, 255, 0.6);
-  --glass-blur: blur(20px) saturate(180%);
-  
-  /* Layout */
-  --radius-lg: 32px;
-  --radius-md: 20px;
-  --radius-sm: 14px;
-  --bar-h: 64px;
-  --safe: env(safe-area-inset-bottom, 0px);
-  
-  /* Timing */
-  --ease: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-body.dark {
-  --bg: #0F0E0D;
-  --bg2: #1A1918;
-  --card: #1C1B1A;
-  --border: rgba(255, 255, 255, 0.08);
-  --text: #F5F0EB;
-  --text2: #C5BDB5;
-  --muted: #7C746C;
-  --muted2: #5C544C;
-  --his-bg: rgba(59, 130, 246, 0.15);
-  --her-bg: rgba(236, 72, 153, 0.15);
-  --green-bg: rgba(34, 197, 94, 0.15);
-  --amber-bg: rgba(217, 119, 6, 0.15);
-  --purple-bg: rgba(139, 92, 246, 0.15);
-  --glass-bg: rgba(28, 27, 26, 0.6);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.3);
-  --shadow-lg: 0 12px 32px rgba(0,0,0,0.4);
-}
-
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  width: 100%;
-  background: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
-  line-height: 1.5;
-  overflow: hidden;
-  transition: background 0.3s var(--ease), color 0.3s var(--ease);
-}
-
-#root {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  position: fixed;
-  inset: 0;
-}
-
-/* Layout */
-.layout {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.content {
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-}
-
-.pages-container {
-  position: relative;
-  height: 100%;
-}
-
-.page {
-  position: absolute;
-  inset: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 16px;
-  padding-bottom: calc(var(--bar-h) + var(--safe) + 16px);
-  opacity: 0;
-  transform: translateX(100%);
-  pointer-events: none;
-  transition: opacity 0.35s var(--ease), transform 0.35s var(--ease);
-  -webkit-overflow-scrolling: touch;
-}
-
-.page.active {
-  opacity: 1;
-  transform: translateX(0);
-  pointer-events: auto;
-  position: relative;
-}
-
-.page::-webkit-scrollbar { width: 5px; }
-.page::-webkit-scrollbar-track { background: transparent; }
-.page::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2.5px; }
-
-/* Cards */
-.card {
-  background: var(--glass-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 16px;
-  margin-bottom: 12px;
-  backdrop-filter: var(--glass-blur);
-  box-shadow: var(--shadow-sm);
-  transition: all 0.2s var(--ease);
-}
-
-.card:active {
-  transform: scale(0.99);
-  box-shadow: var(--shadow-xs);
-}
-
-.card.elevated {
-  box-shadow: var(--shadow-md);
-}
-
-/* Typography */
-h1, h2, h3, h4, h5, h6 { margin: 0; }
-
-.title-lg {
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-  color: var(--text);
-  margin-bottom: 2px;
-}
-
-.subtitle {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text2);
-  margin: 0 0 12px 0;
-}
-
-.label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 8px;
-  display: block;
-}
-
-.exercise-title {
-  font-weight: 600;
-  font-size: 15px;
-  color: var(--text);
-  margin-bottom: 3px;
-}
-
-.exercise-meta {
-  font-size: 12px;
-  color: var(--muted);
-  margin-bottom: 6px;
-}
-
-/* Buttons */
-button {
-  font-family: inherit;
-  border: none;
-  outline: none;
-  cursor: pointer;
-  transition: all 0.2s var(--ease);
-  -webkit-appearance: none;
-  appearance: none;
-  user-select: none;
-}
-
-button:active {
-  transform: scale(0.96);
-}
-
-.btn-primary {
-  width: 100%;
-  padding: 14px 16px;
-  border-radius: var(--radius-sm);
-  font-weight: 700;
-  font-size: 16px;
-  color: white;
-  background: linear-gradient(135deg, var(--his), var(--her));
-  box-shadow: var(--shadow-md);
-}
-
-.btn-secondary {
-  width: 100%;
-  padding: 12px 16px;
-  border-radius: var(--radius-sm);
-  font-weight: 600;
-  font-size: 15px;
-  background: var(--bg2);
-  color: var(--text);
-  border: 1.5px solid var(--border);
-}
-
-.btn-ghost {
-  background: transparent;
-  padding: 8px 12px;
-}
-
-/* Forms */
-input, textarea, select {
-  font-family: inherit;
-  width: 100%;
-  padding: 12px 14px;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg);
-  color: var(--text);
-  font-size: 15px;
-  transition: all 0.2s var(--ease);
-}
-
-input:focus, textarea:focus, select:focus {
-  border-color: var(--his);
-  background: var(--card);
-  box-shadow: 0 0 0 4px var(--his-bg);
-}
-
-.input-group {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-/* Modal */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(12px);
-  z-index: 999;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  animation: fadeIn 0.2s var(--ease);
-}
-
-.modal {
-  background: var(--card);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  width: 100%;
-  max-width: 100%;
-  padding: 24px 18px calc(24px + var(--safe));
-  max-height: 85vh;
-  overflow-y: auto;
-  border: 1px solid var(--border);
-  border-bottom: none;
-  animation: slideUp 0.3s var(--ease);
-  box-shadow: 0 -2px 20px rgba(0,0,0,0.1);
-}
-
-.modal-handle {
-  width: 40px;
-  height: 4px;
-  background: var(--border);
-  border-radius: 2px;
-  margin: 0 auto 20px;
-  opacity: 0.6;
-}
-
-.modal-title {
-  font-size: 20px;
-  font-weight: 700;
-  margin-bottom: 20px;
-  color: var(--text);
-}
-
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
-
-/* Workout */
-.exercise-item {
-  padding: 12px;
-  border-radius: var(--radius-sm);
-  border-bottom: 1px solid var(--border);
-  transition: all 0.2s var(--ease);
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-}
-
-.exercise-item:last-child {
-  border-bottom: none;
-}
-
-.exercise-item.completed {
-  background: var(--green-bg);
-  border: none;
-  margin: 0 -12px;
-  padding: 12px;
-}
-
-.checkbox {
-  width: 28px;
-  height: 28px;
-  border: 2px solid var(--muted2);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  cursor: pointer;
-  transition: all 0.2s var(--ease);
-  background: var(--card);
-  color: white;
-  font-weight: 700;
-}
-
-.checkbox:active {
-  transform: scale(1.1);
-}
-
-.checkbox.active {
-  background: var(--green);
-  border-color: var(--green);
-}
-
-.exercise-info {
-  flex: 1;
-}
-
-.exercise-inputs {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.weight-input {
-  width: 70px;
-  padding: 8px 10px;
-  font-size: 13px;
-  text-align: center;
-  border-radius: var(--radius-sm);
-  border: 1.5px solid var(--border);
-}
-
-.timer-btn {
-  flex: 1;
-  padding: 8px 12px;
-  background: var(--bg2);
-  border: none;
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text2);
-  cursor: pointer;
-  transition: all 0.2s var(--ease);
-}
-
-.timer-btn.active {
-  background: var(--amber-bg);
-  color: var(--amber);
-}
-
-.progress-bar {
-  height: 6px;
-  background: var(--bg2);
-  border-radius: 3px;
-  overflow: hidden;
-  margin-top: 8px;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--his), var(--her));
-  width: 0%;
-  transition: width 0.5s var(--ease);
-  border-radius: 3px;
-}
-
-/* Dashboard */
-.stats-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.stat-card {
-  background: var(--glass-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 16px;
-  text-align: center;
-  backdrop-filter: var(--glass-blur);
-  transition: all 0.2s var(--ease);
-}
-
-.stat-card:active {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.stat-value {
-  font-size: 28px;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-
-.stat-label {
-  font-size: 11px;
-  color: var(--text2);
-  font-weight: 500;
-}
-
-.achievements-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-  gap: 12px;
-  margin: 16px 0;
-}
-
-.achievement {
-  aspect-ratio: 1;
-  border-radius: var(--radius-sm);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 12px;
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  cursor: pointer;
-  transition: all 0.3s var(--ease);
-  opacity: 0.5;
-}
-
-.achievement.unlocked {
-  background: linear-gradient(135deg, var(--his-bg), var(--her-bg));
-  border: 1px solid var(--border);
-  opacity: 1;
-  box-shadow: var(--shadow-sm);
-  transform: scale(1.05);
-}
-
-.achievement-icon {
-  font-size: 32px;
-  margin-bottom: 4px;
-}
-
-.achievement-name {
-  font-size: 9px;
-  font-weight: 600;
-  text-align: center;
-  word-break: break-word;
-}
-
-/* Water Tracker */
-.water-tracker {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.water-btn {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: var(--green-bg);
-  border: 2px solid var(--green);
-  color: var(--green);
-  font-size: 20px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s var(--ease);
-}
-
-.water-btn:active {
-  transform: scale(0.9);
-}
-
-.water-progress {
-  flex: 1;
-  height: 8px;
-  background: var(--bg2);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.water-fill {
-  height: 100%;
-  background: var(--green);
-  width: 0%;
-  transition: width 0.5s var(--ease);
-}
-
-/* Shared Goals */
-.shared-goal {
-  background: linear-gradient(135deg, var(--his-bg), var(--her-bg));
-  border-radius: var(--radius-md);
-  padding: 16px;
-  margin-bottom: 16px;
-  text-align: center;
-}
-
-.shared-goal-title {
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-
-.shared-goal-progress {
-  font-size: 14px;
-  color: var(--text2);
-}
-
-/* Mood Tracker */
-.mood-selector {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.mood-btn {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: var(--bg2);
-  border: 2px solid var(--border);
-  font-size: 24px;
-  cursor: pointer;
-  transition: all 0.2s var(--ease);
-}
-
-.mood-btn.active {
-  background: var(--amber-bg);
-  border-color: var(--amber);
-}
-
-.mood-btn:active {
-  transform: scale(0.9);
-}
-
-/* Navigation */
-.navbar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: calc(var(--bar-h) + var(--safe));
-  padding-bottom: var(--safe);
-  background: var(--glass-bg);
-  border-top: 1px solid var(--border);
-  display: flex;
-  align-items: stretch;
-  z-index: 200;
-  backdrop-filter: var(--glass-blur);
-  box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
-}
-
-.nav-btn {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: all 0.15s var(--ease);
-  padding: 8px;
-  position: relative;
-}
-
-.nav-btn:active {
-  opacity: 0.7;
-}
-
-.nav-icon {
-  font-size: 18px;
-  transition: all 0.2s var(--ease);
-}
-
-.nav-btn.active .nav-icon {
-  transform: translateY(-2px);
-}
-
-.nav-label {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--muted);
-  transition: color 0.2s var(--ease);
-}
-
-.nav-btn.active .nav-label {
-  color: var(--text);
-}
-
-.nav-dot {
-  width: 2px;
-  height: 2px;
-  background: var(--text);
-  border-radius: 50%;
-  opacity: 0;
-  transition: opacity 0.2s var(--ease);
-}
-
-.nav-btn.active .nav-dot {
-  opacity: 1;
-}
-
-/* Toggle */
-.toggle {
-  width: 48px;
-  height: 28px;
-  border-radius: 14px;
-  position: relative;
-  cursor: pointer;
-  transition: background 0.3s var(--ease);
-  flex-shrink: 0;
-  border: none;
-  background: #C5BDB5;
-}
-
-.toggle.active {
-  background: var(--green);
-}
-
-.toggle-thumb {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: white;
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  transition: left 0.3s var(--ease);
-  box-shadow: var(--shadow-sm);
-}
-
-.toggle.active .toggle-thumb {
-  left: 23px;
-}
-
-/* Utilities */
-.flex { display: flex; }
-.flex-col { flex-direction: column; }
-.gap-8 { gap: 8px; }
-.gap-12 { gap: 12px; }
-.items-center { align-items: center; }
-.justify-between { justify-content: space-between; }
-.w-full { width: 100%; }
-.mb-8 { margin-bottom: 8px; }
-.mb-12 { margin-bottom: 12px; }
-.mb-16 { margin-bottom: 16px; }
-.text-center { text-align: center; }
-
-@media (max-width: 380px) {
-  .title-lg { font-size: 20px; }
-  .page { padding: 12px; padding-bottom: calc(var(--bar-h) + var(--safe) + 12px); }
-}
-
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Sans+3:wght@400;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#F9F7F4;--bg2:#EDE9E3;--card:#FFFFFF;--border:#F0EDE8;
+  --text:#1A1714;--text2:#5C544C;--muted:#7C746C;--muted2:#A0998F;
+  --his:#3B82F6;--his-bg:#EFF6FF;--her:#EC4899;--her-bg:#FCE7F3;
+  --green:#22C55E;--green-bg:#F0FDF4;--amber:#D97706;--amber-bg:#FFFBEB;
+  --purple:#7C3AED;--purple-bg:#F5F3FF;
+  --bar-h:64px;--safe-b:env(safe-area-inset-bottom,0px);
+  --shadow:0 2px 20px rgba(0,0,0,0.06);--r:22px;
+}
+body.dark{
+  --bg:#111110;--bg2:#1C1B19;--card:#1E1D1B;--border:#2A2826;
+  --text:#F5F0EB;--text2:#C5BDB5;--muted:#7C746C;--muted2:#5C544C;
+  --his-bg:#1a3a5c;--her-bg:#3d0e27;--green-bg:#052e16;
+  --amber-bg:#3d2000;--purple-bg:#2e1065;--shadow:0 2px 20px rgba(0,0,0,0.35);
+}
+html,body{margin:0;padding:0;background:var(--bg);font-family:'Source Sans 3',sans-serif;color:var(--text);height:100%;overflow:hidden;transition:background 0.3s,color 0.3s}
+#root{height:100vh;display:flex;flex-direction:column}
+.pages{flex:1;overflow:hidden;position:relative}
+.page{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:18px 14px 24px;opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity 0.25s,transform 0.25s}
+.page.active{opacity:1;transform:translateY(0);pointer-events:all}
+
+/* BAR */
+.bar{height:calc(var(--bar-h) + var(--safe-b));padding-bottom:var(--safe-b);background:var(--card);border-top:1px solid var(--border);display:flex;align-items:stretch;z-index:200;transition:background 0.3s,border-color 0.3s}
+.bi{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:transparent;cursor:pointer;padding:6px 4px 0;position:relative}
+.bic{width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;transition:background 0.2s,transform 0.2s}
+.bi.on .bic{transform:translateY(-2px)}
+.bi[data-t=workout].on .bic{background:linear-gradient(135deg,var(--his-bg),var(--her-bg))}
+.bi[data-t=history].on .bic{background:var(--green-bg)}
+.bi[data-t=nutrition].on .bic{background:var(--amber-bg)}
+.bi[data-t=profile].on .bic{background:var(--purple-bg)}
+.bl{font-size:10px;font-weight:600;color:var(--muted);transition:color 0.2s}
+.bi[data-t=workout].on .bl{color:var(--her)}
+.bi[data-t=history].on .bl{color:var(--green)}
+.bi[data-t=nutrition].on .bl{color:var(--amber)}
+.bi[data-t=profile].on .bl{color:var(--purple)}
+.bp{width:4px;height:4px;border-radius:50%;position:absolute;bottom:-4px;opacity:0;transition:opacity 0.2s}
+.bi.on .bp{opacity:1}
+.bi[data-t=workout].on .bp{background:var(--her)}
+.bi[data-t=history].on .bp{background:var(--green)}
+.bi[data-t=nutrition].on .bp{background:var(--amber)}
+.bi[data-t=profile].on .bp{background:var(--purple)}
+
+/* SHARED */
+.card{background:var(--card);border-radius:var(--r);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid var(--border);transition:background 0.3s,border-color 0.3s}
+.st{font-family:'Playfair Display',serif;font-size:22px;font-weight:900;margin:0 0 2px}
+.ss{font-size:12px;color:var(--muted);margin-bottom:16px}
+.rsb{display:flex;justify-content:space-between;align-items:center}
+.pb{height:7px;background:var(--bg2);border-radius:4px;overflow:hidden;margin-top:5px}
+.pbf{height:100%;transition:width 0.5s cubic-bezier(.4,0,.2,1)}
+input,textarea,select{font-family:inherit;color:var(--text);background:var(--bg);border:1.5px solid var(--border);border-radius:10px;outline:none;transition:border-color 0.2s,background 0.3s}
+input:focus,textarea:focus{border-color:var(--muted2)}
+
+/* MODAL */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px);animation:fi 0.2s}
+.sh{background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:500px;padding:20px 18px calc(22px + var(--safe-b));max-height:90vh;overflow-y:auto;animation:su 0.28s cubic-bezier(.4,0,.2,1)}
+@keyframes fi{from{opacity:0}to{opacity:1}}
+@keyframes su{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sh-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+.sh-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;margin-bottom:14px}
+.btn-p{width:100%;padding:15px;border:none;border-radius:14px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:opacity 0.2s;color:white}
+.btn-p:active{opacity:0.8}
+.fl{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px}
+.fi-in{width:100%;padding:12px 14px;font-size:15px;margin-bottom:14px}
+
+/* WORKOUT */
+.tp{display:flex;gap:8px;margin-bottom:14px}
+.tpb{flex:1;padding:12px;border:1.5px solid var(--border);border-radius:14px;font-weight:700;font-size:14px;cursor:pointer;transition:all 0.2s;font-family:inherit;background:var(--card);color:var(--text2)}
+.exi{border-bottom:1px solid var(--border);padding:12px 0}
+.exi:last-child{border-bottom:none}
+.exi.done{background:var(--green-bg);margin:0 -8px;padding:12px 8px;border-radius:12px}
+.rm{display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none}
+.rc{display:flex;align-items:center;gap:8px;padding-left:38px;margin-top:9px}
+.cc{width:26px;height:26px;border-radius:50%;border:2px solid var(--muted2);display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--card);transition:0.2s}
+.cc.on{background:var(--green);border-color:var(--green);color:white}
+.wi{width:64px;padding:9px 6px;font-size:13px;text-align:center}
+.tb{background:var(--bg2);border:none;padding:9px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text2);flex:1;transition:0.2s;font-family:inherit}
+.tb.ton{background:#FEF3C7;color:#D97706}
+body.dark .tb.ton{background:#3d2000;color:#FCD34D}
+
+/* HISTORY */
+.sbox{flex:1;background:var(--card);border-radius:18px;padding:14px 10px;text-align:center;border:1px solid var(--border)}
+.snum{font-family:'Playfair Display',serif;font-size:26px;font-weight:900}
+.slbl{font-size:10px;color:var(--muted);margin-top:2px}
+.dc{aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700}
+.dc.empty{background:var(--bg2);color:var(--muted2)}
+.dc.partial{background:var(--his-bg);color:var(--his)}
+.dc.full{background:linear-gradient(135deg,var(--his),var(--her));color:white}
+.dc.tr{box-shadow:0 0 0 2px var(--her)}
+
+/* NUTRITION */
+.mi{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.mi:last-child{border-bottom:none}
+.amb{width:100%;padding:13px;border:2px dashed var(--border);border-radius:14px;background:transparent;font-family:inherit;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:0.2s}
+.amb:hover{border-color:var(--amber);color:var(--amber)}
+
+/* PROFILE */
+.cc-card{background:linear-gradient(135deg,var(--his-bg),var(--her-bg));border-radius:var(--r);padding:20px;text-align:center;margin-bottom:12px;border:1px solid var(--border)}
+.av{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.sr{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--border);cursor:pointer}
+.sr:last-child{border-bottom:none}
+.si{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.tog{width:44px;height:26px;border-radius:13px;position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0;border:none}
+.tok{width:20px;height:20px;border-radius:50%;background:white;position:absolute;top:3px;transition:left 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.25)}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.55}}
 </style>
 </head>
-<body>
+<body class="">
 <div id="root"></div>
-
 <script type="text/babel">
-const { useState, useEffect, useRef, useCallback, useMemo } = React;
-const tg = window.Telegram?.WebApp;
+const {useState,useEffect,useRef}=React;
+const tg = window.Telegram.WebApp;
 
-/* ═══════════════════════════════════════════════════════════════ */
-/* 🔥 FIREBASE CONFIG */
-/* ═══════════════════════════════════════════════════════════════ */
+const fbCfg={apiKey:"AIzaSyB2DAs_1aIFBWKPoYrk9ewNTLPWBYy5e9A",authDomain:"coupleworkoutjb.firebaseapp.com",databaseURL:"https://coupleworkoutjb-default-rtdb.europe-west1.firebasedatabase.app",projectId:"coupleworkoutjb",storageBucket:"coupleworkoutjb.firebasestorage.app",messagingSenderId:"608590452427",appId:"1:608590452427:web:5e8d4e4a7a75d11bc9ed4e"};
+if(!firebase.apps.length)firebase.initializeApp(fbCfg);
+const db=firebase.database();
+const today=()=>new Date().toISOString().split('T')[0];
 
-const FB_CONFIG = {
-  apiKey: "AIzaSyB2DAs_1aIFBWKPoYrk9ewNTLPWBYy5e9A",
-  authDomain: "coupleworkoutjb.firebaseapp.com",
-  databaseURL: "https://coupleworkoutjb-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "coupleworkoutjb",
-  storageBucket: "coupleworkoutjb.firebasestorage.app",
-  messagingSenderId: "608590452427",
-  appId: "1:608590452427:web:5e8d4e4a7a75d11bc9ed4e"
+const DEF={
+  his:{title:"Его тренировка",color:"#3B82F6",accent:"#1D4ED8",exercises:[
+    {id:'h1',name:"Жим штанги лежа",sets:"3",rest:90},
+    {id:'h2',name:"Тяга верхнего блока",sets:"3",rest:90},
+    {id:'h3',name:"Жим гантелей сидя",sets:"3",rest:60},
+    {id:'h4',name:"Приседания со штангой",sets:"3",rest:120}
+  ]},
+  her:{title:"Её тренировка",color:"#EC4899",accent:"#BE185D",exercises:[
+    {id:'w1',name:"Приседания с гантелями",sets:"3",rest:60},
+    {id:'w2',name:"Румынская тяга",sets:"3",rest:60},
+    {id:'w3',name:"Выпады",sets:"3",rest:45},
+    {id:'w4',name:"Ягодичный мостик",sets:"3",rest:45}
+  ]}
 };
 
-if (!firebase.apps.length) firebase.initializeApp(FB_CONFIG);
-const db = firebase.database();
-
-/* ═══════════════════════════════════════════════════════════════ */
-/* ⚙️ CONSTANTS */
-/* ═══════════════════════════════════════════════════════════════ */
-
-const today = () => new Date().toISOString().split('T')[0];
-
-const ACHIEVEMENTS = [
-  { id: 'first', name: '🏋️', label: 'Первая', desc: 'Первая тренировка', earned: false },
-  { id: 'week', name: '🔥', label: '7 дней', desc: '7-дневный streak', earned: false },
-  { id: 'month', name: '💪', label: '30 дней', desc: '30-дневный марафон', earned: false },
-  { id: 'sync', name: '👫', label: 'Синхро', desc: '100 упражнений', earned: false },
-  { id: 'hydrate', name: '💧', label: 'Гидра', desc: 'Постоянная гидратация', earned: false }
-];
-
-const DEFAULT_EXERCISES = {
-  his: [
-    { id: 'h1', name: 'Жим штанги лежа', sets: '3', rest: 90 },
-    { id: 'h2', name: 'Тяга верхнего блока', sets: '3', rest: 90 },
-  ],
-  her: [
-    { id: 'w1', name: 'Приседания', sets: '3', rest: 60 },
-    { id: 'w2', name: 'Жим гантелей', sets: '3', rest: 60 },
-  ]
-};
-
-const MOODS = ['😊', '😌', '😴', '😤', '💪'];
-
-/* ═══════════════════════════════════════════════════════════════ */
-/* 🎨 COMPONENTS */
-/* ═══════════════════════════════════════════════════════════════ */
-
-const Icon = ({ name }) => {
-  const icons = { workout: '🏋️', dashboard: '📊', history: '📅', nutrition: '🍽️', profile: '👤', check: '✓', plus: '+', edit: '✏️', trash: '🗑️' };
-  return <span>{icons[name] || ''}</span>;
-};
-
-const Timer = ({ seconds, onComplete }) => {
-  const [sec, setSec] = useState(seconds);
-  useEffect(() => { if (sec <= 0) { onComplete?.(); return; } const id = setInterval(() => setSec(s => s - 1), 1000); return () => clearInterval(id); }, [sec, onComplete]);
-  const min = Math.floor(sec / 60), secs = sec % 60, isLow = sec <= 5;
-  return <span style={{ animation: isLow ? 'pulse 0.8s infinite' : 'none' }}>⏱ {min}:{secs < 10 ? '0' : ''}{secs}</span>;
-};
-
-const Modal = ({ isOpen, title, children, onClose }) => {
-  useEffect(() => { if (isOpen) { const h = (e) => e.key === 'Escape' && onClose?.(); document.addEventListener('keydown', h); return () => document.removeEventListener('keydown', h); } }, [isOpen, onClose]);
-  return !isOpen ? null : (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose?.()}>
-      <div className="modal"><div className="modal-handle" />{title && <div className="modal-title">{title}</div>}{children}</div>
-    </div>
-  );
-};
-
-const Toggle = ({ value, onChange }) => (
-  <button className={`toggle ${value ? 'active' : ''}`} onClick={() => onChange?.(!value)}>
-    <div className="toggle-thumb" />
-  </button>
-);
-
-/* ═══════════════════════════════════════════════════════════════ */
-/* 📄 WORKOUT PAGE */
-/* ═══════════════════════════════════════════════════════════════ */
-
-function WorkoutPage({ currentUser, setCurrentUser, profile }) {
-  const [exercises, setExercises] = useState([]);
-  const [sync, setSync] = useState({});
-  const [timerEx, setTimerEx] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-  const [editIdx, setEditIdx] = useState(null);
-  const [form, setForm] = useState({ name: '', sets: '3', rest: 60 });
-  const [mood, setMood] = useState(null);
-
-  if (!profile) return <div style={{ padding: 20, color: 'var(--text)' }}>Загрузка...</div>;
-
-  const userId = profile.id || profile.userId;
-
-  /* ✅ Load exercises from Firebase */
-  useEffect(() => {
-    if (!userId) return;
-    const ref = db.ref(`program/${userId}`);
-    const callback = (snap) => {
-      const data = snap.val();
-      setExercises(data || DEFAULT_EXERCISES.his); // Default fallback
-    };
-    ref.on('value', callback);
-    return () => ref.off('value', callback);
-  }, [userId]);
-
-  /* ✅ Subscribe to workouts */
-  useEffect(() => {
-    if (!userId) return;
-    const day = today();
-    const ref = db.ref(`workouts/${day}/${userId}`);
-    const callback = (snap) => setSync(snap.val() || {});
-    ref.on('value', callback);
-    return () => ref.off('value', callback);
-  }, [userId]);
-
-  /* ✅ Load mood from Firebase */
-  useEffect(() => {
-    if (!userId) return;
-    const ref = db.ref(`moods/${today()}/${userId}`);
-    const callback = (snap) => setMood(snap.val());
-    ref.on('value', callback);
-    return () => ref.off('value', callback);
-  }, [userId]);
-
-  const completed = useMemo(() => exercises.filter(e => sync[e.id]?.isDone).length, [exercises, sync]);
-  const progress = exercises.length ? (completed / exercises.length) * 100 : 0;
-
-  const handleUpdate = useCallback((exId, field, value) => {
-    const day = today();
-    const updates = {};
-    updates[`workouts/${day}/${userId}/${exId}/${field}`] = value;
-    db.ref().update(updates);
-    if (field === 'isDone' && value) {
-      tg?.HapticFeedback?.notificationOccurred?.('success');
-      // Offer to start timer for this exercise
-      const exercise = exercises.find(e => e.id === exId);
-      if (exercise && exercise.rest > 0) {
-        if (window.confirm(`Запустить таймер отдыха на ${exercise.rest} секунд?`)) {
-          setTimerEx(exId);
-        }
-      }
-      if (completed === exercises.length - 1) {
-        confetti?.({ particleCount: 160, spread: 72, origin: { y: 0.6 } });
-      }
-    }
-  }, [completed, exercises.length, userId, exercises]);
-
-  const handleSaveExercise = () => {
-    if (!form.name.trim()) return;
-    const updated = [...exercises];
-    if (editIdx !== null) {
-      updated[editIdx] = { ...updated[editIdx], ...form, rest: +form.rest || 60 };
-    } else {
-      updated.push({ id: `ex_${Date.now()}`, ...form, rest: +form.rest || 60 });
-    }
-    setExercises(updated);
-    db.ref(`program/${userId}`).set(updated);
-    setShowModal(false);
+// Icons
+const Ic=({n,s=20,c="currentColor"})=>{
+  const m={
+    workout:<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 5v14M18 5v14M2 9h4M18 9h4M2 15h4M18 15h4"/></svg>,
+    history:<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>,
+    nutrition:<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 2a2 2 0 0 0-2 2v5H4a2 2 0 0 0 0 4h1l1 9h10l1-9h1a2 2 0 0 0 0-4H9V4a2 2 0 0 0-2-2z"/></svg>,
+    profile:<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>,
+    check:<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+    chev:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>,
+    edit:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>,
+    trash:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>,
+    plus:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+    moon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
+    sun:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
   };
+  return m[n]||null;
+};
 
-  const handleMoodSelect = (selectedMood) => {
-    setMood(selectedMood);
-    db.ref(`moods/${today()}/${userId}`).set(selectedMood);
-  };
-
-  return (
-    <div className="page active">
-      <div style={{ marginBottom: 16 }}>
-        <h1 className="title-lg">Тренировка</h1>
-        <p className="subtitle">{Math.round(progress)}% завершено</p>
-        <div className="progress-bar"><div className="progress-fill" style={{ width: `${progress}%` }} /></div>
-        {progress === 100 && <div style={{ textAlign: 'center', marginTop: 8, color: 'var(--green)', fontWeight: 700 }}>🎉 Браво!</div>}
-      </div>
-
-      {/* Mood Tracker */}
-      <div className="card">
-        <label className="label">Настроение перед тренировкой</label>
-        <div className="mood-selector">
-          {MOODS.map(m => (
-            <button key={m} className={`mood-btn ${mood === m ? 'active' : ''}`} onClick={() => handleMoodSelect(m)}>{m}</button>
-          ))}
-        </div>
-      </div>
-
-      <div className="card">
-        {exercises.length === 0 ? (
-          <p style={{ textAlign: 'center', color: 'var(--text2)', padding: '20px' }}>Нет упражнений. Добавь первое!</p>
-        ) : (
-          exercises.map((ex, idx) => {
-            const data = sync[ex.id] || {};
-            return (
-              <div key={ex.id} className={`exercise-item ${data.isDone ? 'completed' : ''}`}>
-                <button className={`checkbox ${data.isDone ? 'active' : ''}`} onClick={() => handleUpdate(ex.id, 'isDone', !data.isDone)}>{data.isDone && '✓'}</button>
-                <div className="exercise-info" style={{ flex: 1 }}>
-                  <div className="exercise-title">{ex.name}</div>
-                  <div className="exercise-meta">{ex.sets} подх. · {ex.rest}с отдых</div>
-                  <div className="exercise-inputs">
-                    <input type="number" className="weight-input" placeholder="кг" value={data.weight || ''} onChange={e => handleUpdate(ex.id, 'weight', e.target.value)} />
-                    <button className={`timer-btn ${timerEx === ex.id ? 'active' : ''}`} onClick={() => setTimerEx(timerEx === ex.id ? null : ex.id)}>
-                      {timerEx === ex.id ? <Timer seconds={ex.rest} onComplete={() => setTimerEx(null)} /> : `Отдых ${ex.rest}с`}
-                    </button>
-                    <button className="btn-ghost" onClick={() => { setEditIdx(idx); setForm(ex); setShowModal(true); }} style={{ padding: 8 }}>✏️</button>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        )}
-        <button className="btn-secondary" onClick={() => { setEditIdx(null); setForm({ name: '', sets: '3', rest: 60 }); setShowModal(true); }} style={{ marginTop: 12 }}>+ Упражнение</button>
-      </div>
-
-      <Modal isOpen={showModal} title={editIdx !== null ? "Редактировать" : "Новое"} onClose={() => setShowModal(false)}>
-        <div className="flex-col gap-12">
-          <div><label className="label">Название</label><input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Жим штанги..." /></div>
-          <div className="input-group">
-            <div><label className="label">Подходы</label><input type="number" value={form.sets} onChange={e => setForm({ ...form, sets: e.target.value })} /></div>
-            <div><label className="label">Отдых (с)</label><input type="number" value={form.rest} onChange={e => setForm({ ...form, rest: e.target.value })} /></div>
-          </div>
-          <button className="btn-primary" onClick={handleSaveExercise}>{editIdx !== null ? 'Сохр.' : 'Добавить'}</button>
-        </div>
-      </Modal>
-    </div>
-  );
+function Tog({on,onChange,color="#22C55E"}){
+  return <button className="tog" onClick={()=>onChange(!on)} style={{background:on?color:"#C5BDB5"}}>
+    <div className="tok" style={{left:on?'21px':'3px'}}/>
+  </button>;
 }
 
-/* ═══════════════════════════════════════════════════════════════ */
-/* 📊 DASHBOARD PAGE */
-/* ═══════════════════════════════════════════════════════════════ */
+function Tmr({sec:init,onDone}){
+  const [s,setS]=useState(init);
+  useEffect(()=>{
+    if(s<=0){onDone();return;}
+    const t=setInterval(()=>setS(x=>x-1),1000);
+    return()=>clearInterval(t);
+  },[s]);
+  const m=Math.floor(s/60),ss=s%60;
+  return <span style={{animation:s<=5?'pulse 0.8s infinite':'none'}}>⏱ {m}:{ss<10?'0':''}{ss}</span>;
+}
 
-function DashboardPage({ profile, partnerProfile }) {
-  const [stats, setStats] = useState({ his: {}, her: {} });
-  const [sharedGoal, setSharedGoal] = useState({ title: '100 км бега', current: 45, target: 100 });
-  const [notes, setNotes] = useState('');
-  const [partnerOnline, setPartnerOnline] = useState(false);
+function Sheet({onClose,title,children}){
+  return <div className="ov" onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
+    <div className="sh">
+      <div className="sh-handle"/>
+      {title&&<div className="sh-title">{title}</div>}
+      {children}
+    </div>
+  </div>;
+}
 
-  /* ✅ FIX: Proper cleanup of Firebase listeners and offline status */
-  useEffect(() => {
-    const refs = [];
-    const callbacks = [];
-
-    // Profiles listener
-    const profilesRef = db.ref('profiles');
-    const profilesCallback = (snap) => {
-      const data = snap.val();
-      if (data) {
-        setStats({ his: data.his?.stats || {}, her: data.her?.stats || {} });
-        setSharedGoal(data.sharedGoal || sharedGoal);
-        setNotes(data.sharedNotes || '');
-      }
-    };
-    profilesRef.on('value', profilesCallback);
-    refs.push(profilesRef);
-    callbacks.push(profilesCallback);
-
-    // Connected status for partner
-    if (partnerProfile) {
-      const connectedRef = db.ref('.info/connected');
-      const connectedCallback = (snap) => setPartnerOnline(snap.val());
-      connectedRef.on('value', connectedCallback);
-      refs.push(connectedRef);
-      callbacks.push(connectedCallback);
-    }
-
-    return () => {
-      refs.forEach((ref, idx) => ref.off('value', callbacks[idx]));
-    };
-  }, [profile.id, sharedGoal, partnerProfile]);
-
-  const updateNotes = (text) => {
-    setNotes(text);
-    db.ref('sharedNotes').set(text);
+// ── WORKOUT ──
+function WorkoutPage({sync,update,prog,setProg,setShowEd,showEd,editIdx,setEditIdx,form,setForm}){
+  const [who,setWho]=useState("his");
+  const [tmr,setTmr]=useState(null);
+  
+  const act=prog[who];
+  const cnt=w=>prog[w].exercises.filter(e=>sync[e.id]?.isDone).length;
+  const hd=cnt("his"),wd=cnt("her");
+  const total=prog.his.exercises.length+prog.her.exercises.length;
+  const pct=((hd+wd)/total)*100;
+  const saveProg=p=>{setProg(p);db.ref('program').set(p);};
+  const openAdd=()=>{setEditIdx(null);setForm({name:'',sets:'3',rest:60});setShowEd(true)};
+  const openEdit=i=>{const ex=act.exercises[i];setEditIdx(i);setForm({name:ex.name,sets:ex.sets,rest:ex.rest});setShowEd(true)};
+  const saveEx=()=>{
+    if(!form.name.trim())return;
+    const p=JSON.parse(JSON.stringify(prog));
+    if(editIdx!=null){p[who].exercises[editIdx]={...p[who].exercises[editIdx],...form,rest:+form.rest||60};}
+    else{p[who].exercises.push({id:who[0]+Date.now()%9999,...form,rest:+form.rest||60});}
+    saveProg(p);setShowEd(false);
   };
-
-  return (
-    <div className="page active">
-      <h1 className="title-lg">Сводка</h1>
-      <p className="subtitle">Статистика пары</p>
-
-      {/* Shared Goal */}
-      <div className="shared-goal">
-        <div className="shared-goal-title">{sharedGoal.title}</div>
-        <div className="shared-goal-progress">{sharedGoal.current} / {sharedGoal.target} км</div>
-        <div className="progress-bar" style={{ marginTop: 8 }}>
-          <div className="progress-fill" style={{ width: `${(sharedGoal.current / sharedGoal.target) * 100}%` }} />
-        </div>
+  const delEx=i=>{const p=JSON.parse(JSON.stringify(prog));p[who].exercises.splice(i,1);saveProg(p);};
+  return(<div>
+    <div style={{marginBottom:14}}>
+      <div style={{fontSize:24,marginBottom:4}}>⚡️</div>
+      <div className="st">Power Couple</div>
+      <div className="ss">{new Date().toLocaleDateString('ru-RU',{day:'numeric',month:'long',weekday:'long'})}</div>
+    </div>
+    <div className="card" style={{marginBottom:12}}>
+      <div className="rsb" style={{fontSize:13,fontWeight:700,marginBottom:5}}>
+        <span>Прогресс дня</span>
+        <span style={{color:pct===100?'var(--green)':'var(--text)'}}>{Math.round(pct)}%</span>
       </div>
-
-      {/* Shared Notes */}
-      <div className="card">
-        <label className="label">Любовные записки</label>
-        <textarea rows="3" value={notes} onChange={e => updateNotes(e.target.value)} placeholder="Напиши что-то мотивирующее..." />
+      <div className="pb"><div className="pbf" style={{width:`${pct}%`,background:'linear-gradient(90deg,var(--his),var(--her))'}}/></div>
+      {pct===100&&<div style={{textAlign:'center',marginTop:8,fontSize:13,color:'var(--green)',fontWeight:700}}>🎉 Отличная работа!</div>}
+    </div>
+    <div className="tp">
+      {["his","her"].map(t=><button key={t} className="tpb" onClick={()=>setWho(t)} style={{background:who===t?(t==="his"?"var(--his)":"var(--her)"):"var(--card)",color:who===t?"white":"var(--text2)",borderColor:who===t?"transparent":"var(--border)"}}>
+        {t==="his"?`ОН (${hd}/${prog.his.exercises.length})`:`ОНА (${wd}/${prog.her.exercises.length})`}
+      </button>)}
+    </div>
+    <div className="card">
+      <div className="rsb" style={{marginBottom:12}}>
+        <div style={{fontSize:15,fontWeight:700,color:act.accent}}>{act.title}</div>
+        <button onClick={openAdd} style={{display:'flex',alignItems:'center',gap:4,padding:'6px 10px',background:'var(--bg2)',border:'none',borderRadius:9,cursor:'pointer',fontSize:12,fontWeight:600,color:'var(--text2)'}}>
+          <Ic n="plus" s={13}/> Добавить
+        </button>
       </div>
-
-      <div className="card">
-        <div className="stats-grid">
-          <div className="stat-card"><div className="stat-value" style={{ color: 'var(--his)' }}>{stats.his.totalWorkouts || 0}</div><div className="stat-label">Тренировок ОН</div></div>
-          <div className="stat-card"><div className="stat-value" style={{ color: 'var(--her)' }}>{stats.her.totalWorkouts || 0}</div><div className="stat-label">Тренировок ОНА</div></div>
-        </div>
-        <label className="label">Достижения</label>
-        <div className="achievements-grid">
-          {ACHIEVEMENTS.map(ach => (
-            <div key={ach.id} className={`achievement ${ach.earned ? 'unlocked' : ''}`} title={ach.desc}>
-              <div className="achievement-icon">{ach.name}</div>
-              <div className="achievement-name">{ach.label}</div>
+      {act.exercises.map((ex,i)=>{
+        const st=sync[ex.id]||{};
+        return <div key={ex.id} className={`exi ${st.isDone?'done':''}`}>
+          <div className="rm" onClick={()=>update(ex.id,'isDone',!st.isDone)}>
+            <div className={`cc ${st.isDone?'on':''}`}>{st.isDone&&<Ic n="check"/>}</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,fontSize:14,textDecoration:st.isDone?'line-through':'none',color:st.isDone?'var(--muted)':'var(--text)'}}>{ex.name}</div>
+              <div style={{fontSize:11,color:'var(--muted)'}}>{ex.sets} подх. · {ex.rest}с отдых</div>
             </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="card text-center" style={{ background: 'linear-gradient(135deg, var(--his-bg), var(--her-bg))' }}>
-        <div style={{ fontSize: 14, fontWeight: 600 }}>❤️ Вы крутая пара</div>
-        <div className="subtitle" style={{ marginTop: 8, marginBottom: 0 }}>Продолжайте в том же духе! 💪</div>
-      </div>
+            <div style={{display:'flex',gap:2}} onClick={e=>e.stopPropagation()}>
+              <button onClick={()=>openEdit(i)} style={{background:'none',border:'none',cursor:'pointer',padding:5,opacity:0.45}}><Ic n="edit" c="var(--muted)"/></button>
+              <button onClick={()=>delEx(i)} style={{background:'none',border:'none',cursor:'pointer',padding:5,opacity:0.45}}><Ic n="trash" c="#EF4444"/></button>
+            </div>
+          </div>
+          <div className="rc">
+            <input type="number" placeholder="кг" className="wi" value={st.weight||''} onChange={e=>update(ex.id,'weight',e.target.value)}/>
+            <button className={`tb ${tmr===ex.id?'ton':''}`} onClick={()=>setTmr(tmr===ex.id?null:ex.id)}>
+              {tmr===ex.id?<Tmr sec={ex.rest} onDone={()=>{setTmr(null);tg.HapticFeedback?.notificationOccurred('warning')}}/>:"Таймер отдыха"}
+            </button>
+          </div>
+        </div>;
+      })}
     </div>
-  );
+    {showEd&&<Sheet onClose={()=>setShowEd(false)} title={editIdx!=null?"Редактировать":"Новое упражнение"}>
+      <div className="fl">Название</div>
+      <input className="fi-in" placeholder="Жим штанги..." value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/>
+      <div style={{display:'flex',gap:10,marginBottom:14}}>
+        <div style={{flex:1}}><div className="fl">Подходы</div><input type="number" style={{width:'100%',padding:'11px 12px',fontSize:15}} value={form.sets} onChange={e=>setForm({...form,sets:e.target.value})}/></div>
+        <div style={{flex:1}}><div className="fl">Отдых (сек)</div><input type="number" style={{width:'100%',padding:'11px 12px',fontSize:15}} value={form.rest} onChange={e=>setForm({...form,rest:e.target.value})}/></div>
+      </div>
+      <button className="btn-p" onClick={saveEx} style={{background:act.color}}>{editIdx!=null?"Сохранить":"Добавить"}</button>
+    </Sheet>}
+  </div>);
 }
 
-/* ═══════════════════════════════════════════════════════════════ */
-/* 👤 PROFILE PAGE */
-/* ═══════════════════════════════════════════════════════════════ */
-
-function ProfilePage({ profile, setProfile, dark, setDark, partnerProfile }) {
-  const [showEdit, setShowEdit] = useState(false);
-  const [editForm, setEditForm] = useState(profile);
-  const [partnerOnline, setPartnerOnline] = useState(false);
-
-  /* ✅ FIX: Proper cleanup on dark mode toggle and partner status */
-  useEffect(() => {
-    document.body.classList.toggle('dark', dark);
-    localStorage.setItem('theme', dark ? 'dark' : 'light');
-  }, [dark]);
-
-  useEffect(() => {
-    if (partnerProfile) {
-      const connectedRef = db.ref('.info/connected');
-      const callback = (snap) => setPartnerOnline(snap.val());
-      connectedRef.on('value', callback);
-      return () => connectedRef.off('value', callback);
-    }
-  }, [partnerProfile]);
-
-  const handleSaveProfile = () => {
-    setProfile(editForm);
-    const userId = profile.userId || profile.id;
-    const updates = {};
-    updates[`profiles/${userId}`] = editForm;
-    db.ref().update(updates);
-    setShowEdit(false);
-  };
-
-  const handleGenderChange = (gender) => {
-    const colors = { 'М': { primary: 'var(--his)', bg: 'var(--his-bg)' }, 'Ж': { primary: 'var(--her)', bg: 'var(--her-bg)' }, 'Другое': { primary: 'var(--purple)', bg: 'var(--purple-bg)' } };
-    setEditForm({ ...editForm, gender, primaryColor: colors[gender].primary, bgColor: colors[gender].bg });
-  };
-
-  return (
-    <div className="page active">
-      <h1 className="title-lg">Профиль</h1>
-      <p className="subtitle">Настройки и опции</p>
-
-      <div className="card" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-        <div style={{ fontSize: 40, width: 60, textAlign: 'center' }}>{profile.avatar}</div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 700, fontSize: 15 }}>{profile.name}</div>
-          <div style={{ fontSize: 13, color: 'var(--text2)' }}>@{profile.nickname || 'нет'}</div>
-          {partnerProfile && <div style={{ fontSize: 12, color: partnerOnline ? 'var(--green)' : 'var(--amber)' }}>Партнер: {partnerProfile.name} ({partnerOnline ? 'онлайн' : 'оффлайн'})</div>}
-        </div>
-        <button className="btn-ghost" onClick={() => { setEditForm(profile); setShowEdit(true); }}>✏️</button>
-      </div>
-
-      <div className="card">
-        <label className="label">НАСТРОЙКИ</label>
-        <div className="flex justify-between items-center mb-16">
-          <div>
-            <div className="exercise-title">Темная тема</div>
-            <div className="exercise-meta">Переключить оформление</div>
-          </div>
-          <Toggle value={dark} onChange={setDark} />
-        </div>
-        <div className="flex justify-between items-center">
-          <div>
-            <div className="exercise-title">Уведомления</div>
-            <div className="exercise-meta">Получать напоминания</div>
-          </div>
-          <Toggle value={profile.settings?.notifications} onChange={v => setProfile(p => ({ ...p, settings: { ...p.settings, notifications: v } }))} />
-        </div>
-      </div>
-
-      <Modal isOpen={showEdit} title="Редактировать профиль" onClose={() => setShowEdit(false)}>
-        <div className="flex-col gap-12">
-          <div><label className="label">Имя</label><input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} /></div>
-          <div><label className="label">Никнейм (@)</label><input value={editForm.nickname || ''} onChange={e => setEditForm({ ...editForm, nickname: e.target.value })} placeholder="@username" /></div>
-          <div><label className="label">Дата рождения</label><input type="date" value={editForm.birthDate || ''} onChange={e => setEditForm({ ...editForm, birthDate: e.target.value })} /></div>
-          <div><label className="label">Пол</label><select value={editForm.gender || 'М'} onChange={e => handleGenderChange(e.target.value)}><option>М</option><option>Ж</option><option>Другое</option></select></div>
-          <div><label className="label">Аватар (эмодзи или ссылка)</label><input value={editForm.avatar} onChange={e => setEditForm({ ...editForm, avatar: e.target.value })} placeholder="🧑 или https://..." /></div>
-          <div><label className="label">ID партнера</label><input value={editForm.partnerId || ''} onChange={e => setEditForm({ ...editForm, partnerId: e.target.value })} placeholder="partner_id" /></div>
-          <button className="btn-primary" onClick={handleSaveProfile}>Сохранить</button>
-        </div>
-      </Modal>
-
-      <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--muted)', marginTop: 20, paddingBottom: 8 }}>Power Couple v3.0 · Сделано с ❤️</div>
+// ── HISTORY ──
+function HistoryPage({prog}){
+  const [hist,setHist]=useState({});
+  const [load,setLoad]=useState(true);
+  useEffect(()=>{
+    db.ref('workouts').limitToLast(60).on('value',s=>{setHist(s.val()||{});setLoad(false);});
+    return()=>db.ref('workouts').off();
+  },[]);
+  const now=new Date();
+  const days=Array.from({length:28},(_,i)=>{
+    const d=new Date(now);d.setDate(now.getDate()-27+i);
+    const key=d.toISOString().split('T')[0];
+    const dd=hist[key]||{};
+    const all=[...prog.his.exercises,...prog.her.exercises];
+    const done=all.filter(e=>dd[e.id]?.isDone).length;
+    return{key,type:done===0?'empty':done===all.length?'full':'partial',isT:d.toDateString()===now.toDateString(),done,total:all.length};
+  });
+  let streak=0;
+  for(let i=days.length-1;i>=0;i--){if(days[i].type!=='empty')streak++;else if(i<days.length-1)break;}
+  const nw=days.filter(d=>d.type!=='empty').length;
+  const full=days.filter(d=>d.type==='full').length;
+  const allEx=[...prog.his.exercises,...prog.her.exercises];
+  const calcPct=w=>Math.min(Math.round(Object.values(hist).reduce((a,d)=>a+prog[w].exercises.filter(e=>d[e.id]?.isDone).length,0)/(Math.max(nw,1)*prog[w].exercises.length)*100),100);
+  const hp=calcPct('his'),wp=calcPct('her');
+  const recent=Object.entries(hist).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,6);
+  return(<div>
+    <div className="st">История</div>
+    <div className="ss">Прогресс за 4 недели</div>
+    {load?<div style={{textAlign:'center',padding:40,color:'var(--muted)'}}>Загрузка...</div>:<>
+    <div style={{display:'flex',gap:8,marginBottom:12}}>
+      <div className="sbox"><div className="snum" style={{color:'var(--her)'}}>{streak}</div><div className="slbl">🔥 Streak</div></div>
+      <div className="sbox"><div className="snum" style={{color:'var(--his)'}}>{nw}</div><div className="slbl">🏋️ Тренировок</div></div>
+      <div className="sbox"><div className="snum" style={{color:'var(--green)'}}>{nw?Math.round(full/nw*100):0}%</div><div className="slbl">✅ Полных</div></div>
     </div>
-  );
+    <div className="card">
+      <div style={{fontWeight:700,fontSize:14,marginBottom:10}}>Активность</div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:2,marginBottom:5}}>
+        {['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(l=><div key={l} style={{textAlign:'center',fontSize:9,color:'var(--muted)',fontWeight:600}}>{l}</div>)}
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:4}}>
+        {days.map((d,i)=><div key={i} className={`dc ${d.type} ${d.isT?'tr':''}`}/>)}
+      </div>
+      <div style={{display:'flex',gap:10,marginTop:10,justifyContent:'center',fontSize:11,color:'var(--muted)'}}>
+        <span><span style={{display:'inline-block',width:9,height:9,borderRadius:2,background:'var(--bg2)',marginRight:3,verticalAlign:'middle'}}/>Нет</span>
+        <span><span style={{display:'inline-block',width:9,height:9,borderRadius:2,background:'var(--his-bg)',marginRight:3,verticalAlign:'middle'}}/>Частично</span>
+        <span><span style={{display:'inline-block',width:9,height:9,borderRadius:2,background:'linear-gradient(135deg,var(--his),var(--her))',marginRight:3,verticalAlign:'middle'}}/>100%</span>
+      </div>
+    </div>
+    <div className="card">
+      <div style={{fontWeight:700,fontSize:14,marginBottom:14}}>ОН vs ОНА</div>
+      {[{lbl:'ОН',c:'var(--his)',pct:hp},{lbl:'ОНА',c:'var(--her)',pct:wp}].map(x=>(
+        <div key={x.lbl} style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
+          <div style={{fontSize:12,fontWeight:700,color:x.c,width:28,textAlign:'center'}}>{x.lbl}</div>
+          <div style={{flex:1,height:10,background:'var(--bg2)',borderRadius:5,overflow:'hidden'}}>
+            <div style={{height:'100%',width:`${x.pct}%`,background:x.c,borderRadius:5,transition:'width 0.6s ease'}}/>
+          </div>
+          <div style={{fontSize:12,fontWeight:700,color:'var(--muted)',width:32,textAlign:'right'}}>{x.pct}%</div>
+        </div>
+      ))}
+      <div style={{fontSize:11,color:'var(--muted)',textAlign:'center',marginTop:4}}>
+        {hp>wp?"💪 Он старается больше!":hp<wp?"👑 Она впереди!":"🤝 Вы одинаково крутые!"}
+      </div>
+    </div>
+    <div className="card">
+      <div style={{fontWeight:700,fontSize:14,marginBottom:12}}>Последние сессии</div>
+      {recent.length===0&&<div style={{color:'var(--muted)',fontSize:13,textAlign:'center',padding:12}}>Ещё нет данных</div>}
+      {recent.map(([key,data],i)=>{
+        const done=allEx.filter(e=>data[e.id]?.isDone).length;
+        const p=allEx.length?Math.round(done/allEx.length*100):0;
+        const isT=key===today();
+        const d=new Date(key);
+        const lbl=isT?'Сегодня':d.toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
+        return <div key={key} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 0',borderBottom:i<recent.length-1?'1px solid var(--border)':'none'}}>
+          <div style={{width:8,height:8,borderRadius:'50%',background:p===100?'var(--green)':isT?'#FCD34D':'var(--his)',flexShrink:0}}/>
+          <div style={{flex:1}}>
+            <div style={{fontWeight:600,fontSize:13}}>{lbl}</div>
+            <div style={{fontSize:11,color:'var(--muted)'}}>{done} из {allEx.length} упражнений</div>
+          </div>
+          <div style={{fontSize:12,fontWeight:700,color:p===100?'var(--green)':'var(--muted)'}}>{p}%</div>
+        </div>;
+      })}
+    </div>
+    </>}
+  </div>);
 }
 
-/* ═══════════════════════════════════════════════════════════════ */
-/* 🎯 MAIN APP */
-/* ═══════════════════════════════════════════════════════════════ */
-
-function App() {
-  const [tab, setTab] = useState('workout');
-  const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark');
-  const [currentUser, setCurrentUser] = useState('his');
-  const [profile, setProfile] = useState(null);
-  const [partnerProfile, setPartnerProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [showTutorial, setShowTutorial] = useState(false);
-  const [initialized, setInitialized] = useState(false);
-
-  /* ✅ FIX: Telegram & Theme Initialization */
-  useEffect(() => {
-    tg?.ready?.();
-    tg?.expand?.();
-    const handleTheme = () => {
-      const isDark = tg?.colorScheme === 'dark';
-      setDark(isDark);
-      localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    };
-    handleTheme();
-    tg?.onEvent?.('themeChanged', handleTheme);
-    return () => tg?.offEvent?.('themeChanged', handleTheme);
-  }, []);
-
-  /* ✅ FIX: Authentication and profile creation - ONE TIME INIT */
-  useEffect(() => {
-    if (initialized) return; // Prevent re-initialization
-    
-    const user = tg?.initDataUnsafe?.user;
-    const userId = user?.id || 'default_user';
-    
-    const userRef = db.ref(`profiles/${userId}`);
-    userRef.once('value').then((snap) => {
-      let profileToUse;
-      let isNewUser = false;
-      
-      if (!snap.exists()) {
-        // Create new profile from Telegram data
-        const defaultProfile = {
-          id: userId,
-          userId: userId,
-          name: user?.first_name || 'Атлет',
-          nickname: user?.username || '',
-          avatar: user?.photo_url || '🧑',
-          birthDate: '',
-          gender: 'М',
-          settings: { notifications: true },
-          createdAt: new Date().toISOString(),
-          tutorialCompleted: false
-        };
-        userRef.set(defaultProfile);
-        profileToUse = defaultProfile;
-        isNewUser = true;
-      } else {
-        profileToUse = snap.val();
-        // Check if tutorial should be shown
-        if (!profileToUse.tutorialCompleted) {
-          isNewUser = true;
-        }
-      }
-      
-      setProfile(profileToUse);
-      setCurrentUser(userId);
-      if (isNewUser) {
-        setShowTutorial(true);
-      }
-      setLoading(false);
-      setInitialized(true);
-    }).catch((error) => {
-      console.warn('Firebase error:', error);
-      // Fallback profile
-      const fallbackProfile = {
-        id: userId,
-        userId: userId,
-        name: user?.first_name || 'Атлет',
-        nickname: user?.username || '',
-        avatar: user?.photo_url || '🧑',
-        birthDate: '',
-        gender: 'М',
-        settings: { notifications: true },
-        createdAt: new Date().toISOString(),
-        tutorialCompleted: false
-      };
-      setProfile(fallbackProfile);
-      setCurrentUser(userId);
-      setLoading(false);
-      setInitialized(true);
-    });
-  }, [initialized]);
-
-  /* Load profiles and partner - after initialization */
-  useEffect(() => {
-    if (!profile) return; // Wait for initialization
-    
-    const ref = db.ref('profiles');
-    const callback = (snap) => {
-      if (snap.exists()) {
-        const data = snap.val();
-        const currentProfile = data[profile.id] || profile;
-        setProfile(currentProfile);
-        if (currentProfile.partnerId && data[currentProfile.partnerId]) {
-          setPartnerProfile(data[currentProfile.partnerId]);
-        } else {
-          setPartnerProfile(null);
-        }
-      }
-    };
-    ref.on('value', callback);
-    return () => ref.off('value', callback);
-  }, [profile?.id]);
-
-  const tabs = [
-    { id: 'workout', label: 'Зал', icon: 'workout' },
-    { id: 'dashboard', label: 'Сводка', icon: 'dashboard' },
-    { id: 'profile', label: 'Профиль', icon: 'profile' }
+// ── NUTRITION ──
+const EMOJIS=['🥣','🥗','🍗','🥙','🍳','🥤','🍎','🥦','🍚','🥩','🥚','🫙'];
+function NutritionPage({showForm, setShowForm}){
+  const [data,setData]=useState({meals:[],water:0,calGoal:2200});
+  const [mf,setMf]=useState({name:'',cal:'',emoji:'🍗',time:''});
+  const ref=db.ref(`nutrition/${today()}`);
+  useEffect(()=>{
+    ref.on('value',s=>{const d=s.val()||{};setData({meals:d.meals||[],water:d.water||0,calGoal:d.calGoal||2200});});
+    return()=>ref.off();
+  },[]);
+  const save=u=>ref.update(u);
+  const addMeal=()=>{
+    if(!mf.name||!mf.cal)return;
+    const meals=[...data.meals,{...mf,cal:+mf.cal,time:mf.time||new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}),id:Date.now()}];
+    save({meals});setShowForm(false);setMf({name:'',cal:'',emoji:'🍗',time:''});
+  };
+  const delMeal=id=>save({meals:data.meals.filter(m=>m.id!==id)});
+  const addWater=v=>save({water:Math.max(0,Math.min(5000,(data.water||0)+v))});
+  const consumed=data.meals.reduce((s,m)=>s+m.cal,0);
+  const wL=(data.water/1000).toFixed(1);
+  const wPct=Math.min(data.water/2500*100,100);
+  const cPct=Math.min(consumed/data.calGoal*100,100);
+  const macros=[
+    {n:'Белки',c:'var(--his)',pct:Math.min(Math.round(consumed*.3/600*100),100),v:Math.round(consumed*.3/4)+'г'},
+    {n:'Углеводы',c:'var(--amber)',pct:Math.min(Math.round(consumed*.5/960*100),100),v:Math.round(consumed*.5/4)+'г'},
+    {n:'Жиры',c:'var(--her)',pct:Math.min(Math.round(consumed*.2/630*100),100),v:Math.round(consumed*.2/9)+'г'},
   ];
-
-  return (
-    <div className="layout">
-      {loading ? (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', fontSize: 18, fontWeight: 600 }}>
-          Загрузка...
-        </div>
-      ) : (
-        <>
-          <div className="content">
-            <div className="pages-container">
-              {tab === 'workout' && <WorkoutPage currentUser={currentUser} setCurrentUser={setCurrentUser} profile={profile} />}
-              {tab === 'dashboard' && <DashboardPage profile={profile} partnerProfile={partnerProfile} />}
-              {tab === 'profile' && <ProfilePage profile={profile} setProfile={setProfile} dark={dark} setDark={setDark} partnerProfile={partnerProfile} />}
-            </div>
-          </div>
-          <nav className="navbar">
-            {tabs.map(t => (
-              <button key={t.id} className={`nav-btn ${tab === t.id ? 'active' : ''}`} onClick={() => { setTab(t.id); tg?.HapticFeedback?.selectionChanged?.(); }}>
-                <div className="nav-icon"><Icon name={t.icon} /></div>
-                <div className="nav-label">{t.label}</div>
-                <div className="nav-dot" />
-              </button>
-            ))}
-          </nav>
-        </>
-      )}
-      <Modal isOpen={showTutorial} title="Добро пожаловать!" onClose={() => { setShowTutorial(false); if (profile) { const updates = {}; updates[`profiles/${profile.id}/tutorialCompleted`] = true; db.ref().update(updates); } }}>
-        <div className="flex-col gap-12">
-          <p>🎉 Привет! Это Power Couple — приложение для совместных тренировок.</p>
-          <p>🏋️ В разделе "Зал" отмечайте выполненные подходы и используйте таймеры отдыха.</p>
-          <p>📊 В "Сводке" следите за прогрессом пары и достижениями.</p>
-          <p>👤 В "Профиле" настройте свой аккаунт и подключите партнера.</p>
-          <button className="btn-primary" onClick={() => { setShowTutorial(false); if (profile) { const updates = {}; updates[`profiles/${profile.id}/tutorialCompleted`] = true; db.ref().update(updates); } }}>Понятно!</button>
-        </div>
-      </Modal>
+  return(<div>
+    <div className="st">Питание</div>
+    <div className="ss">Калории и макронутриенты</div>
+    <div className="card">
+      <div className="rsb" style={{marginBottom:5}}>
+        <span style={{fontWeight:700,fontSize:14}}>Калории</span>
+        <span style={{fontSize:13,color:'var(--muted)'}}>{consumed} / {data.calGoal} ккал</span>
+      </div>
+      <div className="pb"><div className="pbf" style={{width:`${cPct}%`,background:'linear-gradient(90deg,#F59E0B,#EC4899)'}}/></div>
+      <div style={{fontSize:11,color:'var(--muted)',marginTop:5}}>Осталось: {Math.max(0,data.calGoal-consumed)} ккал</div>
     </div>
-  );
+    <div className="card">
+      <div className="rsb" style={{marginBottom:8}}>
+        <span style={{fontWeight:700,fontSize:14}}>💧 Вода</span>
+        <span style={{fontWeight:700,color:'var(--his)'}}>{wL} / 2.5 л</span>
+      </div>
+      <div className="pb" style={{marginBottom:12}}><div className="pbf" style={{width:`${wPct}%`,background:'linear-gradient(90deg,#60A5FA,#2563EB)'}}/></div>
+      <div style={{display:'flex',gap:6,justifyContent:'center',flexWrap:'wrap'}}>
+        {[150,250,330,500].map(ml=><button key={ml} onClick={()=>addWater(ml)} style={{padding:'9px 14px',border:'1.5px solid var(--border)',borderRadius:12,background:'var(--bg)',fontFamily:'inherit',fontSize:13,fontWeight:600,cursor:'pointer',color:'var(--his)',transition:'all 0.15s'}}>
+          +{ml}мл
+        </button>)}
+        <button onClick={()=>addWater(-250)} style={{padding:'9px 12px',border:'1.5px solid var(--border)',borderRadius:12,background:'var(--bg)',fontFamily:'inherit',fontSize:13,fontWeight:600,cursor:'pointer',color:'var(--muted)'}}>−250</button>
+      </div>
+      <div style={{display:'flex',justifyContent:'center',gap:4,marginTop:10}}>
+        {Array.from({length:10},(_,i)=><div key={i} style={{width:14,height:20,borderRadius:'50% 50% 40% 40%',background:i<Math.round(data.water/250)?'var(--his)':'var(--bg2)',transition:'background 0.3s'}}/>)}
+      </div>
+    </div>
+    <div className="card">
+      <div style={{fontWeight:700,fontSize:14,marginBottom:12}}>БЖУ</div>
+      {macros.map((m,i)=><div key={i} style={{marginBottom:i<2?10:0}}>
+        <div className="rsb" style={{fontSize:12,marginBottom:4}}>
+          <span style={{fontWeight:600}}><span style={{display:'inline-block',width:7,height:7,borderRadius:'50%',background:m.c,marginRight:5,verticalAlign:'middle'}}/>{m.n}</span>
+          <span style={{color:'var(--muted)'}}>{m.v}</span>
+        </div>
+        <div style={{height:6,background:'var(--bg2)',borderRadius:3,overflow:'hidden'}}><div style={{height:'100%',width:`${m.pct}%`,background:m.c,borderRadius:3,transition:'width 0.5s ease'}}/></div>
+      </div>)}
+    </div>
+    <div className="card">
+      <div style={{fontWeight:700,fontSize:14,marginBottom:4}}>Приёмы пищи</div>
+      {data.meals.length===0&&<div style={{color:'var(--muted)',fontSize:13,textAlign:'center',padding:'12px 0'}}>Добавь первый приём пищи 🍽️</div>}
+      {data.meals.map((m,i)=><div key={m.id||i} className="mi">
+        <div style={{fontSize:22,width:36,textAlign:'center'}}>{m.emoji}</div>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:700,fontSize:14}}>{m.name} <span style={{fontSize:10,color:'var(--muted)',fontWeight:400}}>{m.time}</span></div>
+          <div style={{fontSize:12,color:'var(--muted)'}}>{m.cal} ккал</div>
+        </div>
+        <button onClick={()=>delMeal(m.id)} style={{background:'none',border:'none',cursor:'pointer',padding:6,opacity:0.4}}><Ic n="trash" c="#EF4444"/></button>
+      </div>)}
+      <button className="amb" onClick={()=>setShowForm(true)}>+ Добавить приём пищи</button>
+    </div>
+    {showForm&&<Sheet onClose={()=>setShowForm(false)} title="Новый приём пищи">
+      <div className="fl">Иконка</div>
+      <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:14}}>
+        {EMOJIS.map(e=><button key={e} onClick={()=>setMf({...mf,emoji:e})} style={{width:38,height:38,border:`2px solid ${mf.emoji===e?'var(--amber)':'var(--border)'}`,borderRadius:10,background:mf.emoji===e?'var(--amber-bg)':'var(--bg)',fontSize:18,cursor:'pointer'}}>{e}</button>)}
+      </div>
+      <div className="fl">Название</div>
+      <input className="fi-in" placeholder="Куриная грудка..." value={mf.name} onChange={e=>setMf({...mf,name:e.target.value})}/>
+      <div style={{display:'flex',gap:10,marginBottom:14}}>
+        <div style={{flex:1}}><div className="fl">Калории</div><input type="number" style={{width:'100%',padding:'11px 12px',fontSize:15}} placeholder="350" value={mf.cal} onChange={e=>setMf({...mf,cal:e.target.value})}/></div>
+        <div style={{flex:1}}><div className="fl">Время</div><input type="time" style={{width:'100%',padding:'11px 12px',fontSize:15}} value={mf.time} onChange={e=>setMf({...mf,time:e.target.value})}/></div>
+      </div>
+      <button className="btn-p" onClick={addMeal} style={{background:'var(--amber)'}}>Добавить</button>
+    </Sheet>}
+  </div>);
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+// ── PROFILE ──
+function ProfilePage({dark,setDark,modal,setModal}){
+  const [pf,setPf]=useState({hisName:'',herName:'',hisBirthday:'',herBirthday:''});
+  const [goals,setGoals]=useState({calories:2200,water:2.5,days:4});
+  const [notif,setNotif]=useState({on:false,time:'18:00',msg:'Пора на тренировку! 💪'});
+  
+  useEffect(()=>{
+    db.ref('profile').on('value',s=>{
+      const d=s.val()||{};
+      if(d.names)setPf(x=>({...x,...d.names}));
+      if(d.goals)setGoals(x=>({...x,...d.goals}));
+      if(d.notif)setNotif(x=>({...x,...d.notif}));
+    });
+    return()=>db.ref('profile').off();
+  },[]);
+  const savePf=()=>{db.ref('profile/names').set(pf);setModal(null)};
+  const saveGoals=()=>{db.ref('profile/goals').set(goals);setModal(null)};
+  const saveNotif=()=>{db.ref('profile/notif').set(notif);setModal(null)};
+  const hn=pf.hisName||'Он', wn=pf.herName||'Она';
+  return(<div>
+    <div className="st">Профиль</div>
+    <div className="ss">Ваша пара и настройки</div>
+    <div className="cc-card">
+      <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:14,marginBottom:12}}>
+        <div className="av" style={{background:'var(--his-bg)'}}>🧔</div>
+        <div style={{fontSize:20}}>❤️</div>
+        <div className="av" style={{background:'var(--her-bg)'}}>👩</div>
+      </div>
+      <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700}}>{hn} & {wn}</div>
+      <div style={{fontSize:12,color:'var(--muted)',marginTop:3}}>Power Couple</div>
+      <button onClick={()=>setModal('profile')} style={{marginTop:12,padding:'8px 16px',border:'1.5px solid var(--border)',borderRadius:10,background:'var(--card)',fontFamily:'inherit',fontSize:12,fontWeight:600,cursor:'pointer',color:'var(--text2)',display:'inline-flex',alignItems:'center',gap:5}}>
+        <Ic n="edit" s={13} c="var(--text2)"/> Редактировать
+      </button>
+    </div>
+    <div className="card">
+      {[
+        {ico:'🎯',bg:'var(--her-bg)',title:'Цели',desc:`${goals.calories} ккал · ${goals.water}л · ${goals.days}д/нед`,fn:()=>setModal('goals')},
+        {ico:'🔔',bg:'var(--amber-bg)',title:'Уведомления',desc:notif.on?`Вкл · ${notif.time}`:'Выключены',fn:()=>setModal('notif')},
+      ].map((s,i)=><div key={i} className="sr" onClick={s.fn}>
+        <div className="si" style={{background:s.bg}}>{s.ico}</div>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:600,fontSize:14}}>{s.title}</div>
+          <div style={{fontSize:12,color:'var(--muted)',marginTop:1}}>{s.desc}</div>
+        </div>
+        <Ic n="chev" c="var(--muted2)"/>
+      </div>)}
+      <div className="sr" style={{cursor:'default'}}>
+        <div className="si" style={{background:'var(--bg2)'}}><Ic n={dark?'sun':'moon'} s={16} c="var(--text2)"/></div>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:600,fontSize:14}}>{dark?'Светлая тема':'Тёмная тема'}</div>
+          <div style={{fontSize:12,color:'var(--muted)',marginTop:1}}>Переключить оформление</div>
+        </div>
+        <Tog on={dark} onChange={v=>{setDark(v);document.body.classList.toggle('dark',v);db.ref('settings/darkMode').set(v);}} color="var(--purple)"/>
+      </div>
+    </div>
+    <div style={{textAlign:'center',fontSize:11,color:'var(--muted2)',marginTop:6,paddingBottom:4}}>Power Couple v2.0 · Made with ❤️</div>
+
+    {modal==='profile'&&<Sheet onClose={()=>setModal(null)} title="Редактировать профиль">
+      <div style={{display:'flex',gap:10,marginBottom:14}}>
+        <div style={{flex:1}}><div className="fl">Его имя 🧔</div><input style={{width:'100%',padding:'11px 12px',fontSize:15}} value={pf.hisName} onChange={e=>setPf({...pf,hisName:e.target.value})}/></div>
+        <div style={{flex:1}}><div className="fl">Её имя 👩</div><input style={{width:'100%',padding:'11px 12px',fontSize:15}} value={pf.herName} onChange={e=>setPf({...pf,herName:e.target.value})}/></div>
+      </div>
+      <div style={{display:'flex',gap:10,marginBottom:14}}>
+        <div style={{flex:1}}><div className="fl">Его д.р.</div><input type="date" style={{width:'100%',padding:'11px 12px',fontSize:14}} value={pf.hisBirthday} onChange={e=>setPf({...pf,hisBirthday:e.target.value})}/></div>
+        <div style={{flex:1}}><div className="fl">Её д.р.</div><input type="date" style={{width:'100%',padding:'11px 12px',fontSize:14}} value={pf.herBirthday} onChange={e=>setPf({...pf,herBirthday:e.target.value})}/></div>
+      </div>
+      <button className="btn-p" onClick={savePf} style={{background:'linear-gradient(135deg,var(--his),var(--her))'}}>Сохранить</button>
+    </Sheet>}
+
+    {modal==='goals'&&<Sheet onClose={()=>setModal(null)} title="Цели">
+      <div className="fl">Калории в день</div>
+      <input type="number" className="fi-in" value={goals.calories} onChange={e=>setGoals({...goals,calories:+e.target.value||2000})}/>
+      <div className="fl">Вода (литры)</div>
+      <input type="number" step="0.5" className="fi-in" value={goals.water} onChange={e=>setGoals({...goals,water:+e.target.value||2})}/>
+      <div className="fl">Тренировок в неделю</div>
+      <div style={{display:'flex',gap:8,marginBottom:14}}>
+        {[2,3,4,5,6].map(n=><button key={n} onClick={()=>setGoals({...goals,days:n})} style={{flex:1,padding:'10px 0',border:`2px solid ${goals.days===n?'var(--his)':'var(--border)'}`,borderRadius:10,background:goals.days===n?'var(--his-bg)':'var(--bg)',fontFamily:'inherit',fontSize:14,fontWeight:700,cursor:'pointer',color:goals.days===n?'var(--his)':'var(--text2)'}}>{n}</button>)}
+      </div>
+      <button className="btn-p" onClick={saveGoals} style={{background:'var(--his)'}}>Сохранить</button>
+    </Sheet>}
+
+    {modal==='notif'&&<Sheet onClose={()=>setModal(null)} title="Уведомления">
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 14px',background:'var(--bg)',borderRadius:14,marginBottom:14}}>
+        <span style={{fontWeight:600,fontSize:14}}>Напоминания о тренировке</span>
+        <Tog on={notif.on} onChange={v=>setNotif({...notif,on:v})} color="var(--his)"/>
+      </div>
+      {notif.on&&<>
+        <div className="fl">Время</div>
+        <input type="time" className="fi-in" value={notif.time} onChange={e=>setNotif({...notif,time:e.target.value})}/>
+        <div className="fl">Текст сообщения</div>
+        <textarea className="fi-in" rows={3} style={{resize:'none',lineHeight:1.6,marginBottom:14}} value={notif.msg} onChange={e=>setNotif({...notif,msg:e.target.value})}/>
+        <div style={{background:'var(--amber-bg)',borderRadius:14,padding:12,marginBottom:14,fontSize:12,color:'var(--amber)',lineHeight:1.6}}>
+          ⚠️ Push-уведомления требуют Telegram Bot + server-side webhook. Сохрани настройки и подключи бота через BotFather.
+        </div>
+      </>}
+      <button className="btn-p" onClick={saveNotif} style={{background:'var(--amber)'}}>Сохранить</button>
+    </Sheet>}
+  </div>);
+}
+
+// ── APP ──
+const TABS=[
+  {id:'workout',lbl:'Тренировка',ico:'workout'},
+  {id:'history',lbl:'История',ico:'history'},
+  {id:'nutrition',lbl:'Питание',ico:'nutrition'},
+  {id:'profile',lbl:'Профиль',ico:'profile'},
+];
+const TCOL={workout:'var(--her)',history:'var(--green)',nutrition:'var(--amber)',profile:'var(--purple)'};
+
+function App(){
+  const [tab,setTab]=useState('workout');
+  const [sync,setSync]=useState({});
+  const [prog,setProg]=useState(DEF);
+  const [dark,setDark]=useState(tg.colorScheme === 'dark');
+  
+  // States for Modals to handle BackButton
+  const [showEd,setShowEd]=useState(false);
+  const [showNutForm,setShowNutForm]=useState(false);
+  const [profModal,setProfModal]=useState(null);
+  
+  const [editIdx,setEditIdx]=useState(null);
+  const [form,setForm]=useState({name:'',sets:'3',rest:60});
+
+  const day=today();
+
+  useEffect(()=>{
+    // 1. Initializing Mini App
+    tg.ready();
+    tg.expand();
+    tg.enableClosingConfirmation();
+    
+    // 2. Set colors to blend with header
+    const updateColors = () => {
+      const isDark = tg.colorScheme === 'dark';
+      setDark(isDark);
+      document.body.classList.toggle('dark', isDark);
+      tg.setHeaderColor(isDark ? '#111110' : '#F9F7F4');
+      tg.setBackgroundColor(isDark ? '#111110' : '#F9F7F4');
+    };
+    
+    updateColors();
+    tg.onEvent('themeChanged', updateColors);
+
+    const wr=db.ref(`workouts/${day}`);
+    wr.on('value',s=>{
+      const d=s.val()||{};
+      setSync(d);
+      const all=[...prog.his.exercises,...prog.her.exercises];
+      if(all.length&&all.every(e=>d[e.id]?.isDone))
+        confetti({particleCount:160,spread:72,origin:{y:0.6}});
+    });
+    db.ref('program').once('value',s=>{const p=s.val();if(p?.his&&p?.her)setProg(p);});
+    
+    return () => {
+        wr.off();
+        tg.offEvent('themeChanged', updateColors);
+    };
+  }, [day]);
+
+  // 3. Back Button Management
+  useEffect(() => {
+    const isModalOpen = showEd || showNutForm || profModal !== null;
+    const isSubPage = tab !== 'workout';
+
+    if (isModalOpen || isSubPage) {
+        tg.BackButton.show();
+    } else {
+        tg.BackButton.hide();
+    }
+
+    const onBack = () => {
+        if (showEd) setShowEd(false);
+        else if (showNutForm) setShowNutForm(false);
+        else if (profModal) setProfModal(null);
+        else if (tab !== 'workout') setTab('workout');
+    };
+
+    tg.onEvent('backButtonClicked', onBack);
+    return () => tg.offEvent('backButtonClicked', onBack);
+  }, [showEd, showNutForm, profModal, tab]);
+
+  const update=(id,field,val)=>{
+    db.ref(`workouts/${day}/${id}/${field}`).set(val);
+    if(field==='isDone'&&val)tg.HapticFeedback?.notificationOccurred('success');
+  };
+
+  const go=id=>{setTab(id);tg.HapticFeedback?.selectionChanged();};
+
+  return(<>
+    <div className="pages">
+      <div className={`page${tab==='workout'?' active':''}`}>
+        <WorkoutPage 
+            sync={sync} update={update} prog={prog} setProg={setProg} 
+            setShowEd={setShowEd} showEd={showEd} editIdx={editIdx} 
+            setEditIdx={setEditIdx} form={form} setForm={setForm}
+        />
+      </div>
+      <div className={`page${tab==='history'?' active':''}`}><HistoryPage prog={prog}/></div>
+      <div className={`page${tab==='nutrition'?' active':''}`}>
+        <NutritionPage showForm={showNutForm} setShowForm={setShowNutForm}/>
+      </div>
+      <div className={`page${tab==='profile'?' active':''}`}>
+        <ProfilePage dark={dark} setDark={setDark} modal={profModal} setModal={setProfModal}/>
+      </div>
+    </div>
+    <div className="bar">
+      {TABS.map(t=><button key={t.id} className={`bi${tab===t.id?' on':''}`} data-t={t.id} onClick={()=>go(t.id)}>
+        <div className="bic"><Ic n={t.ico} s={22} c={tab===t.id?TCOL[t.id]:'var(--muted)'}/></div>
+        <div className="bl">{t.lbl}</div>
+        <div className="bp"/>
+      </button>)}
+    </div>
+  </>);
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
