@@ -807,7 +807,6 @@ const Toggle = ({ value, onChange }) => (
 
 function WorkoutPage({ currentUser, setCurrentUser, profile }) {
   const [exercises, setExercises] = useState([]);
-  const [partnerExercises, setPartnerExercises] = useState([]);
   const [sync, setSync] = useState({});
   const [timerEx, setTimerEx] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -815,75 +814,46 @@ function WorkoutPage({ currentUser, setCurrentUser, profile }) {
   const [form, setForm] = useState({ name: '', sets: '3', rest: 60 });
   const [mood, setMood] = useState(null);
 
-  /* ✅ FIX: Load exercises from Firebase program/${profile.userId || currentUser} */
+  if (!profile) return <div style={{ padding: 20, color: 'var(--text)' }}>Загрузка...</div>;
+
+  const userId = profile.id || profile.userId;
+
+  /* ✅ Load exercises from Firebase */
   useEffect(() => {
-    const userId = profile.userId || currentUser;
+    if (!userId) return;
     const ref = db.ref(`program/${userId}`);
     const callback = (snap) => {
       const data = snap.val();
-      setExercises(data || DEFAULT_EXERCISES[currentUser]);
+      setExercises(data || DEFAULT_EXERCISES.his); // Default fallback
     };
     ref.on('value', callback);
     return () => ref.off('value', callback);
-  }, [currentUser, profile.userId]);
+  }, [userId]);
 
-  /* ✅ FIX: Load partner exercises */
+  /* ✅ Subscribe to workouts */
   useEffect(() => {
-    if (profile.partnerId) {
-      const ref = db.ref(`program/${profile.partnerId}`);
-      const callback = (snap) => {
-        const data = snap.val();
-        setPartnerExercises(data || DEFAULT_EXERCISES[currentUser === 'his' ? 'her' : 'his']);
-      };
-      ref.on('value', callback);
-      return () => ref.off('value', callback);
-    }
-  }, [profile.partnerId, currentUser]);
-
-  /* ✅ FIX: Subscribe to workouts for both users (shared progress) */
-  useEffect(() => {
+    if (!userId) return;
     const day = today();
-    const refs = [];
-    const callbacks = [];
+    const ref = db.ref(`workouts/${day}/${userId}`);
+    const callback = (snap) => setSync(snap.val() || {});
+    ref.on('value', callback);
+    return () => ref.off('value', callback);
+  }, [userId]);
 
-    // Subscribe to current user workouts
-    const currentUserId = profile.userId || currentUser;
-    const currentRef = db.ref(`workouts/${day}/${currentUserId}`);
-    const currentCallback = (snap) => setSync(prev => ({ ...prev, [currentUser]: snap.val() || {} }));
-    currentRef.on('value', currentCallback);
-    refs.push(currentRef);
-    callbacks.push(currentCallback);
-
-    // Subscribe to partner workouts if partner exists
-    if (profile.partnerId) {
-      const partnerRef = db.ref(`workouts/${day}/${profile.partnerId}`);
-      const partnerCallback = (snap) => setSync(prev => ({ ...prev, [profile.partnerId]: snap.val() || {} }));
-      partnerRef.on('value', partnerCallback);
-      refs.push(partnerRef);
-      callbacks.push(partnerCallback);
-    }
-
-    return () => {
-      refs.forEach((ref, idx) => ref.off('value', callbacks[idx]));
-    };
-  }, [currentUser, profile.partnerId, profile.userId]);
-
-  /* ✅ FIX: Load mood from Firebase */
+  /* ✅ Load mood from Firebase */
   useEffect(() => {
-    const userId = profile.userId || currentUser;
+    if (!userId) return;
     const ref = db.ref(`moods/${today()}/${userId}`);
     const callback = (snap) => setMood(snap.val());
     ref.on('value', callback);
     return () => ref.off('value', callback);
-  }, [currentUser, profile.userId]);
+  }, [userId]);
 
-  const completed = useMemo(() => exercises.filter(e => sync[currentUser]?.[e.id]?.isDone).length, [exercises, sync, currentUser]);
+  const completed = useMemo(() => exercises.filter(e => sync[e.id]?.isDone).length, [exercises, sync]);
   const progress = exercises.length ? (completed / exercises.length) * 100 : 0;
 
-  /* ✅ FIX: Updated Firebase paths with .update() */
   const handleUpdate = useCallback((exId, field, value) => {
     const day = today();
-    const userId = profile.userId || currentUser;
     const updates = {};
     updates[`workouts/${day}/${userId}/${exId}/${field}`] = value;
     db.ref().update(updates);
@@ -896,9 +866,11 @@ function WorkoutPage({ currentUser, setCurrentUser, profile }) {
           setTimerEx(exId);
         }
       }
-      if (completed === exercises.length - 1) confetti?.({ particleCount: 160, spread: 72, origin: { y: 0.6 } });
+      if (completed === exercises.length - 1) {
+        confetti?.({ particleCount: 160, spread: 72, origin: { y: 0.6 } });
+      }
     }
-  }, [completed, exercises.length, currentUser, profile.userId, exercises]);
+  }, [completed, exercises.length, userId, exercises]);
 
   const handleSaveExercise = () => {
     if (!form.name.trim()) return;
@@ -906,17 +878,15 @@ function WorkoutPage({ currentUser, setCurrentUser, profile }) {
     if (editIdx !== null) {
       updated[editIdx] = { ...updated[editIdx], ...form, rest: +form.rest || 60 };
     } else {
-      updated.push({ id: `${currentUser[0]}${Date.now()}`, ...form, rest: +form.rest || 60 });
+      updated.push({ id: `ex_${Date.now()}`, ...form, rest: +form.rest || 60 });
     }
     setExercises(updated);
-    const userId = profile.userId || currentUser;
     db.ref(`program/${userId}`).set(updated);
     setShowModal(false);
   };
 
   const handleMoodSelect = (selectedMood) => {
     setMood(selectedMood);
-    const userId = profile.userId || currentUser;
     db.ref(`moods/${today()}/${userId}`).set(selectedMood);
   };
 
@@ -939,40 +909,30 @@ function WorkoutPage({ currentUser, setCurrentUser, profile }) {
         </div>
       </div>
 
-      <div className="flex gap-8 mb-16">
-        {['his', 'her'].map(u => {
-          const isCurrent = u === currentUser;
-          const userExercises = isCurrent ? exercises : partnerExercises;
-          const userSync = isCurrent ? sync[currentUser] : sync[profile.partnerId];
-          const userCompleted = userExercises.filter(e => userSync?.[e.id]?.isDone).length;
-          return (
-            <button key={u} onClick={() => setCurrentUser(u)} style={{ flex: 1, padding: '10px 14px', borderRadius: 'var(--radius-sm)', background: isCurrent ? 'var(--card)' : 'var(--bg2)', color: 'var(--text)', fontWeight: 600, fontSize: 13, border: isCurrent ? `2px solid ${u === 'his' ? 'var(--his)' : 'var(--her)'}` : '1px solid var(--border)' }}>
-              {u === 'his' ? `ОН (${userCompleted}/${userExercises.length})` : `ОНА (${userCompleted}/${userExercises.length})`}
-            </button>
-          );
-        })}
-      </div>
-
       <div className="card">
-        {exercises.map((ex, idx) => {
-          const data = sync[ex.id] || {};
-          return (
-            <div key={ex.id} className={`exercise-item ${data.isDone ? 'completed' : ''}`}>
-              <button className={`checkbox ${data.isDone ? 'active' : ''}`} onClick={() => handleUpdate(ex.id, 'isDone', !data.isDone)}>{data.isDone && '✓'}</button>
-              <div className="exercise-info" style={{ flex: 1 }}>
-                <div className="exercise-title">{ex.name}</div>
-                <div className="exercise-meta">{ex.sets} подх. · {ex.rest}с отдых</div>
-                <div className="exercise-inputs">
-                  <input type="number" className="weight-input" placeholder="кг" value={data.weight || ''} onChange={e => handleUpdate(ex.id, 'weight', e.target.value)} />
-                  <button className={`timer-btn ${timerEx === ex.id ? 'active' : ''}`} onClick={() => setTimerEx(timerEx === ex.id ? null : ex.id)}>
-                    {timerEx === ex.id ? <Timer seconds={ex.rest} onComplete={() => setTimerEx(null)} /> : 'Таймер'}
-                  </button>
-                  <button className="btn-ghost" onClick={() => { setEditIdx(idx); setForm(ex); setShowModal(true); }} style={{ padding: 8 }}>✏️</button>
+        {exercises.length === 0 ? (
+          <p style={{ textAlign: 'center', color: 'var(--text2)', padding: '20px' }}>Нет упражнений. Добавь первое!</p>
+        ) : (
+          exercises.map((ex, idx) => {
+            const data = sync[ex.id] || {};
+            return (
+              <div key={ex.id} className={`exercise-item ${data.isDone ? 'completed' : ''}`}>
+                <button className={`checkbox ${data.isDone ? 'active' : ''}`} onClick={() => handleUpdate(ex.id, 'isDone', !data.isDone)}>{data.isDone && '✓'}</button>
+                <div className="exercise-info" style={{ flex: 1 }}>
+                  <div className="exercise-title">{ex.name}</div>
+                  <div className="exercise-meta">{ex.sets} подх. · {ex.rest}с отдых</div>
+                  <div className="exercise-inputs">
+                    <input type="number" className="weight-input" placeholder="кг" value={data.weight || ''} onChange={e => handleUpdate(ex.id, 'weight', e.target.value)} />
+                    <button className={`timer-btn ${timerEx === ex.id ? 'active' : ''}`} onClick={() => setTimerEx(timerEx === ex.id ? null : ex.id)}>
+                      {timerEx === ex.id ? <Timer seconds={ex.rest} onComplete={() => setTimerEx(null)} /> : `Отдых ${ex.rest}с`}
+                    </button>
+                    <button className="btn-ghost" onClick={() => { setEditIdx(idx); setForm(ex); setShowModal(true); }} style={{ padding: 8 }}>✏️</button>
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
         <button className="btn-secondary" onClick={() => { setEditIdx(null); setForm({ name: '', sets: '3', rest: 60 }); setShowModal(true); }} style={{ marginTop: 12 }}>+ Упражнение</button>
       </div>
 
@@ -1157,6 +1117,7 @@ function ProfilePage({ profile, setProfile, dark, setDark, partnerProfile }) {
         <div className="flex-col gap-12">
           <div><label className="label">Имя</label><input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} /></div>
           <div><label className="label">Никнейм (@)</label><input value={editForm.nickname || ''} onChange={e => setEditForm({ ...editForm, nickname: e.target.value })} placeholder="@username" /></div>
+          <div><label className="label">Дата рождения</label><input type="date" value={editForm.birthDate || ''} onChange={e => setEditForm({ ...editForm, birthDate: e.target.value })} /></div>
           <div><label className="label">Пол</label><select value={editForm.gender || 'М'} onChange={e => handleGenderChange(e.target.value)}><option>М</option><option>Ж</option><option>Другое</option></select></div>
           <div><label className="label">Аватар (эмодзи или ссылка)</label><input value={editForm.avatar} onChange={e => setEditForm({ ...editForm, avatar: e.target.value })} placeholder="🧑 или https://..." /></div>
           <div><label className="label">ID партнера</label><input value={editForm.partnerId || ''} onChange={e => setEditForm({ ...editForm, partnerId: e.target.value })} placeholder="partner_id" /></div>
@@ -1177,10 +1138,11 @@ function App() {
   const [tab, setTab] = useState('workout');
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark');
   const [currentUser, setCurrentUser] = useState('his');
-  const [profile, setProfile] = useState({ id: 'his', name: 'ОН', avatar: '🧑', gender: 'М', settings: { notifications: true } });
+  const [profile, setProfile] = useState(null);
   const [partnerProfile, setPartnerProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
   /* ✅ FIX: Telegram & Theme Initialization */
   useEffect(() => {
@@ -1196,43 +1158,81 @@ function App() {
     return () => tg?.offEvent?.('themeChanged', handleTheme);
   }, []);
 
-  /* ✅ FIX: Authentication and profile creation */
+  /* ✅ FIX: Authentication and profile creation - ONE TIME INIT */
   useEffect(() => {
+    if (initialized) return; // Prevent re-initialization
+    
     const user = tg?.initDataUnsafe?.user;
-    if (user) {
-      const userRef = db.ref(`profiles/${currentUser}`);
-      userRef.once('value').then((snap) => {
-        if (!snap.exists()) {
-          // Create new profile from Telegram data
-          const newProfile = {
-            ...profile,
-            userId: user.id,
-            name: user.first_name || profile.name,
-            nickname: user.username || '',
-            avatar: user.photo_url || profile.avatar,
-            createdAt: new Date().toISOString()
-          };
-          userRef.set(newProfile);
-          setProfile(newProfile);
-          setShowTutorial(true); // Show tutorial for new users
-        } else {
-          const existingProfile = snap.val();
-          setProfile(existingProfile);
+    const userId = user?.id || 'default_user';
+    
+    const userRef = db.ref(`profiles/${userId}`);
+    userRef.once('value').then((snap) => {
+      let profileToUse;
+      let isNewUser = false;
+      
+      if (!snap.exists()) {
+        // Create new profile from Telegram data
+        const defaultProfile = {
+          id: userId,
+          userId: userId,
+          name: user?.first_name || 'Атлет',
+          nickname: user?.username || '',
+          avatar: user?.photo_url || '🧑',
+          birthDate: '',
+          gender: 'М',
+          settings: { notifications: true },
+          createdAt: new Date().toISOString(),
+          tutorialCompleted: false
+        };
+        userRef.set(defaultProfile);
+        profileToUse = defaultProfile;
+        isNewUser = true;
+      } else {
+        profileToUse = snap.val();
+        // Check if tutorial should be shown
+        if (!profileToUse.tutorialCompleted) {
+          isNewUser = true;
         }
-        setLoading(false);
-      });
-    } else {
+      }
+      
+      setProfile(profileToUse);
+      setCurrentUser(userId);
+      if (isNewUser) {
+        setShowTutorial(true);
+      }
       setLoading(false);
-    }
-  }, [currentUser, profile]);
+      setInitialized(true);
+    }).catch((error) => {
+      console.warn('Firebase error:', error);
+      // Fallback profile
+      const fallbackProfile = {
+        id: userId,
+        userId: userId,
+        name: user?.first_name || 'Атлет',
+        nickname: user?.username || '',
+        avatar: user?.photo_url || '🧑',
+        birthDate: '',
+        gender: 'М',
+        settings: { notifications: true },
+        createdAt: new Date().toISOString(),
+        tutorialCompleted: false
+      };
+      setProfile(fallbackProfile);
+      setCurrentUser(userId);
+      setLoading(false);
+      setInitialized(true);
+    });
+  }, [initialized]);
 
-  /* Load profiles and partner */
+  /* Load profiles and partner - after initialization */
   useEffect(() => {
+    if (!profile) return; // Wait for initialization
+    
     const ref = db.ref('profiles');
     const callback = (snap) => {
       if (snap.exists()) {
         const data = snap.val();
-        const currentProfile = data[currentUser] || profile;
+        const currentProfile = data[profile.id] || profile;
         setProfile(currentProfile);
         if (currentProfile.partnerId && data[currentProfile.partnerId]) {
           setPartnerProfile(data[currentProfile.partnerId]);
@@ -1243,7 +1243,7 @@ function App() {
     };
     ref.on('value', callback);
     return () => ref.off('value', callback);
-  }, [currentUser, profile]);
+  }, [profile?.id]);
 
   const tabs = [
     { id: 'workout', label: 'Зал', icon: 'workout' },
@@ -1277,13 +1277,13 @@ function App() {
           </nav>
         </>
       )}
-      <Modal isOpen={showTutorial} title="Добро пожаловать!" onClose={() => setShowTutorial(false)}>
+      <Modal isOpen={showTutorial} title="Добро пожаловать!" onClose={() => { setShowTutorial(false); if (profile) { const updates = {}; updates[`profiles/${profile.id}/tutorialCompleted`] = true; db.ref().update(updates); } }}>
         <div className="flex-col gap-12">
           <p>🎉 Привет! Это Power Couple — приложение для совместных тренировок.</p>
           <p>🏋️ В разделе "Зал" отмечайте выполненные подходы и используйте таймеры отдыха.</p>
           <p>📊 В "Сводке" следите за прогрессом пары и достижениями.</p>
           <p>👤 В "Профиле" настройте свой аккаунт и подключите партнера.</p>
-          <button className="btn-primary" onClick={() => setShowTutorial(false)}>Понятно!</button>
+          <button className="btn-primary" onClick={() => { setShowTutorial(false); if (profile) { const updates = {}; updates[`profiles/${profile.id}/tutorialCompleted`] = true; db.ref().update(updates); } }}>Понятно!</button>
         </div>
       </Modal>
     </div>
